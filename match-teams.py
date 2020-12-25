@@ -16,7 +16,10 @@ import datetime
 DEBUG = True
 TEAM_SIZE = 2
 BUILD_GRAPH = True
+CALCULATE_CLUSTERS = True
+PLOT_GRAPH = False
 FULL_GRAPH = True
+SAVE_CSV = False
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
@@ -196,6 +199,9 @@ def read_teams():
         if emailhash not in emails:
             emails[emailhash] = email
 
+    debug('events:')
+    for o,events in all_events.items():
+        debug('\t{}: {}'.format(o, len(events)))
     debug('students:', len(emails))
     debug('teams:', len(teams))
 
@@ -310,6 +316,7 @@ def build_graph(teams, teaminfo, emails):
                     v['label'] = t1name
                     v['color'] = t1color
                     v['size'] = len(t1emails)
+                    v['team'] = t1
                 else:
                     t1idx = teamindexes[t1]
                 if t2 not in teamindexes:
@@ -319,6 +326,7 @@ def build_graph(teams, teaminfo, emails):
                     v['label'] = t2name
                     v['color'] = t2color
                     v['size'] = len(t2emails)
+                    v['team'] = t2
                 else:
                     t2idx = teamindexes[t2]
                 if t1date < t2date:
@@ -330,6 +338,22 @@ def build_graph(teams, teaminfo, emails):
     if BUILD_GRAPH:
         debug()
         debug('graph size: v {} e {}'.format(g.vcount(), g.ecount()))            
+
+        debug('calculating clusters...')
+        c = g.clusters(igraph.WEAK)
+        debug('clusters:', len(c))
+        giant = c.giant()
+        debug('the giant cluster: v {} e {}'.format(giant.vcount(), giant.ecount()))
+
+        giant_students = set([])
+        for t in giant.vs['team']:
+            assert t in teams
+            emails = teams[t]
+            for e in emails:
+                if not e in giant_students:
+                    giant_students.add(e)
+        
+        debug('the giant cluster students:', len(giant_students))
 
     # counters
     matches = {}
@@ -358,6 +382,8 @@ def build_graph(teams, teaminfo, emails):
         else:
             paths[num2] = 1
 
+        if not SAVE_CSV:
+            continue
         # output matches
         data = []
         email_list = '|'.join(map(lambda eml: emails[eml], m_emails))
@@ -410,7 +436,9 @@ if __name__ == '__main__':
     init_teams()
     t, ti, e = read_teams()
     graph, data = build_graph(t, ti, e)
-    save_csv(RESULT_CSV, data)
+    if SAVE_CSV:
+        save_csv(RESULT_CSV, data)
     if BUILD_GRAPH:
-        plot_graph(graph, RESULT_PNG)
-        plot_graph(graph, RESULT_SVG)
+        if PLOT_GRAPH:
+            plot_graph(graph, RESULT_PNG)
+            plot_graph(graph, RESULT_SVG)
