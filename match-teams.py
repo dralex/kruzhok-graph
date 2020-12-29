@@ -16,15 +16,17 @@ import datetime
 DEBUG = True
 TEAM_SIZE = 2
 BUILD_GRAPH = True
-CALCULATE_CLUSTERS = True
-PLOT_GRAPH = False
+CALCULATE_CLUSTERS = False
+PLOT_GRAPH = True
 FULL_GRAPH = True
 SAVE_CSV = False
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
+PICTURE_SIZE = 4000
 TEAM_NAME_LIMIT = 15
+FILTER_ORIGIN = None
 
 # ------------------------------------------------------------------------------
 # Data structure
@@ -32,6 +34,7 @@ TEAM_NAME_LIMIT = 15
 
 TeamOrigins = {
     'ПБ':{
+        'active': True,
         'type': 'projects',
         'season': None,
         'teams': 'data/pb-teams-2.csv',
@@ -43,6 +46,7 @@ TeamOrigins = {
         'limit': None
     },
     'KRUZHOK.PRO': {
+        'active': True,
         'type': 'projects',
         'season': None,
         'teams': 'data/kruzhokpro-teams.csv',
@@ -53,6 +57,7 @@ TeamOrigins = {
         'limit': None
     },
     'Архипелаг 20.35': {
+        'active': True,
         'type': 'projects',
         'season': None,
         'teams': 'data/archipelago.csv',
@@ -63,6 +68,7 @@ TeamOrigins = {
         'limit': None
     },
     'ОНТИ-2018/19(2)': {
+        'active': True,
         'type': 'onti',
         'season': 2018,
         'teams': 'data/onti-teams-1819.csv',
@@ -73,6 +79,7 @@ TeamOrigins = {
         'limit': 6
     },
     'ОНТИ-2018/19(Ф)': {
+        'active': True,
         'type': 'onti',
         'season': 2018,
         'teams': 'data/onti-teams-1819-f.csv',
@@ -83,6 +90,7 @@ TeamOrigins = {
         'limit': 6
     },
     'ОНТИ-2019/20(2)': {
+        'active': True,
         'type': 'onti',
         'season': 2019,
         'teams': 'data/onti-teams-1920.csv',
@@ -93,6 +101,7 @@ TeamOrigins = {
         'limit': 6
     },
     'ОНТИ-2019/20(Ф)': {
+        'active': True,
         'type': 'onti',
         'season': 2019,
         'teams': 'data/onti-teams-1920-f.csv',
@@ -103,6 +112,7 @@ TeamOrigins = {
         'limit': 6
     },
     'ОНТИ-2020/21': {
+        'active': True,
         'type': 'onti',
         'season': 2020,
         'teams': 'data/onti-teams-2021.csv',
@@ -160,12 +170,16 @@ def save_csv(fname, data):
 
 def init_teams():
     for origin in TeamOrigins.values():
+        if not origin['active']:
+            continue
         if isinstance(origin['dates'], str):
             origin['dates'] = read_dates(origin['dates'])
 
 def read_teams():
     participants = []
     for origin,data in TeamOrigins.items():
+        if not data['active']:
+            continue
         participants += read_participants(data['teams'],
                                           origin)
     debug('participants:', len(participants))
@@ -279,6 +293,9 @@ def build_graph(teams, teaminfo, emails):
 
             if t1origin == t2origin and t1event == t2event:
                 # skip team interconnections in the common event
+                continue
+            if FILTER_ORIGIN and t1origin != FILTER_ORIGIN and t2origin != FILTER_ORIGIN:
+                # if origin filter is set skip the rest
                 continue
 
             common_emails = t1emails & t2emails
@@ -421,8 +438,8 @@ def build_graph(teams, teaminfo, emails):
 def plot_graph(g, filename):
     visual_style = {}
     # Set bbox and margin
-    visual_style["bbox"] = (4000, 4000)
-    visual_style["margin"] = 17
+    visual_style["bbox"] = (PICTURE_SIZE, PICTURE_SIZE)
+    visual_style["margin"] = 15
     visual_style["edge_curved"] = False
     visual_style["edge_width"] = [1 + 4 * (w - 1) for w in g.es['weight']]
     visual_style["vertex_size"] = [20 + 5 * (s - 2) for s in g.vs['size']]
