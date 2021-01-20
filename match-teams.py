@@ -25,7 +25,7 @@ SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
-PICTURE_SIZE =  2000
+PICTURE_SIZE = 4000
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
 REGIONS_FILE = 'data/regions.csv'
@@ -65,6 +65,17 @@ TeamOrigins = {
         'teams': 'data/archipelago-teams-hash.csv',
         'level': 1,
         'dates': datetime.date(2020, 11, 12),
+        'color': 'red',
+        'selections': None,
+        'limit': None
+    },
+    'МПШ': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': 'data/pb-mpsh-teams-hash.csv',
+        'level': 1,
+        'dates': datetime.date(2019, 8, 12),
         'color': 'red',
         'selections': None,
         'limit': None
