@@ -19,14 +19,16 @@ BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
 PLOT_GRAPH = True
 FULL_GRAPH = True
+FILTER_REGIONS = []
 SAVE_CSV = False
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
-PICTURE_SIZE = 4000
+PICTURE_SIZE =  2000
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
+REGIONS_FILE = 'data/regions.csv'
 
 # ------------------------------------------------------------------------------
 # Data structure
@@ -37,7 +39,7 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/pb-teams-2.csv',
+        'teams': 'data/pb-teams-2-hash.csv',
         'level': 1,
         'dates': 'data/pb-dates.csv',
         'color': 'red',
@@ -49,7 +51,7 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/kruzhokpro-teams.csv',
+        'teams': 'data/kruzhokpro-teams-hash.csv',
         'level': 1,
         'dates': 'data/kruzhokpro-dates.csv',
         'color': 'orange',
@@ -60,7 +62,7 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/archipelago.csv',
+        'teams': 'data/archipelago-teams-hash.csv',
         'level': 1,
         'dates': datetime.date(2020, 11, 12),
         'color': 'red',
@@ -71,7 +73,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2018,
-        'teams': 'data/onti-teams-1819.csv',
+        'teams': 'data/onti-teams-1819-hash.csv',
         'level': 2,
         'dates': datetime.date(2018, 11, 15),
         'color': 'blue4',
@@ -82,7 +84,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2018,
-        'teams': 'data/onti-teams-1819-f.csv',
+        'teams': 'data/onti-teams-1819-f-hash.csv',
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
         'color': 'blue',
@@ -93,7 +95,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2019,
-        'teams': 'data/onti-teams-1920.csv',
+        'teams': 'data/onti-teams-1920-hash.csv',
         'level': 2,
         'dates': datetime.date(2019, 11, 15),
         'color': 'green4',
@@ -104,7 +106,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2019,
-        'teams': 'data/onti-teams-1920-f.csv',
+        'teams': 'data/onti-teams-1920-f-hash.csv',
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
         'color': 'green',
@@ -115,7 +117,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2020,
-        'teams': 'data/onti-teams-2021.csv',
+        'teams': 'data/onti-teams-2021-hash.csv',
         'level': 2,
         'dates': datetime.date(2020, 11, 15),
         'color': 'yellow',
@@ -139,8 +141,9 @@ def read_participants(fname, prefix):
     participants = []
     reader = csv.reader(open(fname), delimiter=':')
     for row in reader:
-        if len(row) != 3 or row[0].find('@') < 0:
+        if len(row) != 3:
             debug('file {} bad line {}'.format(fname, str(row)))
+            continue
         if len(row[2].strip()) > 0:
             participants.append((row[0], prefix, row[1], row[2]))
     return participants
@@ -156,6 +159,15 @@ def read_dates(fname):
             day = int(datestr[0])
             d[row[0]] = datetime.date(year, month, day)
     return d
+
+def read_regions(fname):
+    users = {}
+    reader = csv.reader(open(fname), delimiter=':')
+    for row in reader:
+        if len(row) == 2:
+            user, code = row
+            users[user] = int(code)
+    return users
 
 def save_csv(fname, data):
     debug('saving csv {}...'.format(fname))
@@ -175,7 +187,7 @@ def init_teams():
         if isinstance(origin['dates'], str):
             origin['dates'] = read_dates(origin['dates'])
 
-def read_teams():
+def read_teams(regions):
     participants = []
     for origin,data in TeamOrigins.items():
         if not data['active']:
@@ -189,6 +201,8 @@ def read_teams():
     teaminfo = {}
     teams = {}
     emails = {}
+    has_regions = 0
+    reg_filter = 0
 
     for p in participants:
         email, origin, event, team = p
@@ -212,11 +226,18 @@ def read_teams():
             
         if emailhash not in emails:
             emails[emailhash] = email
+            if email in regions:
+                has_regions += 1
+                if FILTER_REGIONS and regions[email] in FILTER_REGIONS:
+                    reg_filter += 1
 
     debug('events:')
     for o,events in all_events.items():
         debug('\t{}: {}'.format(o, len(events)))
     debug('students:', len(emails))
+    debug('students with regions:', has_regions)
+    if FILTER_REGIONS:
+        debug('students with filter {}: {}'.format(FILTER_REGIONS, reg_filter))
     debug('teams:', len(teams))
 
     # drop bad teams
@@ -227,6 +248,14 @@ def read_teams():
         origininfo = TeamOrigins[teaminfo[t][0]]
         if size == 1 or origininfo['limit'] and size > origininfo['limit']:
             to_delete.append(t)
+        elif FILTER_REGIONS:
+            found = False
+            for emailhash in e:
+                email = emails[emailhash]
+                if email in regions and regions[email] in FILTER_REGIONS:
+                    found = True
+            if not found:
+                to_delete.append(t)
     for t in to_delete:
         del teams[t]
 
@@ -251,7 +280,7 @@ def read_teams():
 # Graph construction
 # ------------------------------------------------------------------------------
 
-def build_graph(teams, teaminfo, emails):
+def build_graph(teams, teaminfo, emails, regions):
     team_graph_edges = {}
     matched_emails = {}
     teamindexes = {}
@@ -451,8 +480,9 @@ def plot_graph(g, filename):
 if __name__ == '__main__':
 
     init_teams()
-    t, ti, e = read_teams()
-    graph, data = build_graph(t, ti, e)
+    r = read_regions(REGIONS_FILE)
+    t, ti, e = read_teams(r)
+    graph, data = build_graph(t, ti, e, r)
     if SAVE_CSV:
         save_csv(RESULT_CSV, data)
     if BUILD_GRAPH:
