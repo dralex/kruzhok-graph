@@ -150,7 +150,7 @@ def debug(*s):
 # ------------------------------------------------------------------------------
 def read_participants(fname, prefix):
     participants = []
-    reader = csv.reader(open(fname), delimiter=':')
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
     for row in reader:
         if len(row) != 3:
             debug('file {} bad line {}'.format(fname, str(row)))
@@ -161,7 +161,7 @@ def read_participants(fname, prefix):
 
 def read_dates(fname):
     d = {}
-    reader = csv.reader(open(fname), delimiter=':')
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
     for row in reader:
         if len(row) == 2:
             datestr = row[1].split('.')
@@ -173,7 +173,7 @@ def read_dates(fname):
 
 def read_regions(fname):
     users = {}
-    reader = csv.reader(open(fname), delimiter=':')
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
     for row in reader:
         if len(row) == 2:
             user, code = row
@@ -182,7 +182,7 @@ def read_regions(fname):
 
 def save_csv(fname, data):
     debug('saving csv {}...'.format(fname))
-    with open(fname, 'w', newline='') as csvfile:
+    with open(fname, 'w', newline='', encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=';',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerows(data)
