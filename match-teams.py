@@ -18,10 +18,10 @@ DEBUG = True
 TEAM_SIZE = 2
 BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
-PLOT_GRAPH = True
+PLOT_GRAPH = False
 FULL_GRAPH = True
 FILTER_REGIONS = []
-SAVE_CSV = False
+SAVE_CSV = True
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
@@ -407,8 +407,7 @@ def build_graph(teams, teaminfo, emails, regions):
         giant_students = set([])
         for t in giant.vs['team']:
             assert t in teams
-            emails = teams[t]
-            for e in emails:
+            for e in teams[t]:
                 if not e in giant_students:
                     giant_students.add(e)
         
