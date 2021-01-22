@@ -8,6 +8,7 @@
 import csv
 import igraph
 import datetime
+from os.path import join
 
 # ------------------------------------------------------------------------------
 # Global constants and flags
@@ -28,7 +29,8 @@ RESULT_SVG = 'graph.svg'
 PICTURE_SIZE = 4000
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
-REGIONS_FILE = 'data/regions.csv'
+DATADIR = 'data'
+REGIONS_FILE = join(DATADIR, 'regions.csv')
 
 # ------------------------------------------------------------------------------
 # Data structure
@@ -39,9 +41,9 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/pb-teams-2-hash.csv',
+        'teams': join(DATADIR, 'pb-teams-2-hash.csv'),
         'level': 1,
-        'dates': 'data/pb-dates.csv',
+        'dates': join(DATADIR, 'pb-dates.csv'),
         'color': 'red',
         'selections': {'Полуфинал MultiTechBattle': 'Финал MultiTechBattle',
                        '2 этап Skolkovo Junior Challenge-2020': 'Финал Skolkovo Junior Challenge 2020'},
@@ -51,9 +53,9 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/kruzhokpro-teams-hash.csv',
+        'teams': join(DATADIR, 'kruzhokpro-teams-hash.csv'),
         'level': 1,
-        'dates': 'data/kruzhokpro-dates.csv',
+        'dates': join(DATADIR, 'kruzhokpro-dates.csv'),
         'color': 'orange',
         'selections': None,
         'limit': None
@@ -62,7 +64,7 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/archipelago-teams-hash.csv',
+        'teams': join(DATADIR, 'archipelago-teams-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 11, 12),
         'color': 'red',
@@ -73,7 +75,7 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': 'data/pb-mpsh-teams-hash.csv',
+        'teams': join(DATADIR, 'pb-mpsh-teams-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 8, 12),
         'color': 'red',
@@ -84,7 +86,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2018,
-        'teams': 'data/onti-teams-1819-hash.csv',
+        'teams': join(DATADIR, 'onti-teams-1819-hash.csv'),
         'level': 2,
         'dates': datetime.date(2018, 11, 15),
         'color': 'blue4',
@@ -95,7 +97,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2018,
-        'teams': 'data/onti-teams-1819-f-hash.csv',
+        'teams': join(DATADIR, 'onti-teams-1819-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
         'color': 'blue',
@@ -106,7 +108,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2019,
-        'teams': 'data/onti-teams-1920-hash.csv',
+        'teams': join(DATADIR, 'onti-teams-1920-hash.csv'),
         'level': 2,
         'dates': datetime.date(2019, 11, 15),
         'color': 'green4',
@@ -117,7 +119,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2019,
-        'teams': 'data/onti-teams-1920-f-hash.csv',
+        'teams': join(DATADIR, 'onti-teams-1920-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
         'color': 'green',
@@ -128,7 +130,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2020,
-        'teams': 'data/onti-teams-2021-hash.csv',
+        'teams': join(DATADIR, 'onti-teams-2021-hash.csv'),
         'level': 2,
         'dates': datetime.date(2020, 11, 15),
         'color': 'yellow',
