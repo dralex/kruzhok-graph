@@ -18,11 +18,12 @@ DEBUG = True
 TEAM_SIZE = 2
 BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
-PLOT_GRAPH = False
+PLOT_GRAPH = True
 FULL_GRAPH = True
+USE_TOPICS = False
 FILTER_REGIONS = []
-SAVE_CSV = True
-SKIP_SELECTION = False
+SAVE_CSV = False
+SKIP_SELECTION = True
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
@@ -31,6 +32,9 @@ TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
 DATADIR = 'data'
 REGIONS_FILE = join(DATADIR, 'regions.csv')
+TOPICS_FILE = join(DATADIR, 'topics.csv')
+EVENT_TOPICS_FILE = join(DATADIR, 'events-topics.csv')
+RUKAMI_REST_TOPIC = 'Прочее'
 
 # ------------------------------------------------------------------------------
 # Data structure
@@ -56,7 +60,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'kruzhokpro-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'kruzhokpro-dates.csv'),
-        'color': 'orange',
+        'color': 'red',
         'selections': None,
         'limit': None
     },
@@ -79,6 +83,28 @@ TeamOrigins = {
         'level': 1,
         'dates': datetime.date(2019, 8, 12),
         'color': 'red',
+        'selections': None,
+        'limit': None
+    },
+    'Rukami(отбор)': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'rukami-teams-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2020, 9, 11),
+        'color': 'purple',
+        'selections': None,
+        'limit': None
+    },
+    'Rukami(финал)': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'rukami-final-teams-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2020, 11, 28),
+        'color': 'purple',
         'selections': None,
         'limit': None
     },
@@ -137,7 +163,26 @@ TeamOrigins = {
         'selections': None,
         'limit': 6
     },
+    'ОНТИ-2020/21(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2020,
+        'teams': join(DATADIR, 'onti-teams-2021-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2021, 3, 1),
+        'color': 'orange',
+        'selections': 'ОНТИ-2020/21',
+        'limit': 6
+    },
 }
+
+def CONVERT_ORIGIN_NAME(origin):
+    if origin.find('ОНТИ') == 0:
+        return 'ОНТИ'
+    elif origin.find('Rukami') == 0:
+        return 'Rukami'
+    else:
+        return 'ПБ'
 
 # ------------------------------------------------------------------------------
 # Debugging and assertions
@@ -182,10 +227,54 @@ def read_regions(fname):
             users[user] = int(code)
     return users
 
+def read_topics(fname):
+    topics = {}
+    topics_all = set()
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
+    for row in reader:
+        if len(row) == 0:
+            continue
+        target = row[0]
+        topics_all.add(target)
+        for r in row:
+            if r not in topics:
+                topics[r] = set([])
+            topics[r].add(target)
+    return (topics_all, topics)
+
+def read_event_topics(fname, topics, events):
+    all_topics = {}
+    for o in events:
+        all_topics[o] = {}
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
+    for row in reader:
+        if len(row) == 2:
+            origin, event = row
+            if event not in topics:
+                debug('event {} is not in topics'.format(event))
+                continue
+            all_topics[origin][event] = topics[event]
+        elif len(row) > 2:
+            origin, event = row[0:2]
+            s = set([])
+            for r in row[2:]:
+                assert len(r) > 0, row
+                assert r in topics, r
+                s.update(topics[r])
+            all_topics[origin][event] = s
+        else:
+            debug('bad event topic row {}'.format(row))
+            exit(1)
+    for rukami in ('Rukami(отбор)','Rukami(финал)'):    
+        for e in events[rukami]:
+            assert e in topics, e
+            all_topics[rukami][e] = topics[e]
+    return all_topics
+
 def save_csv(fname, data):
     debug('saving csv {}...'.format(fname))
     with open(fname, 'w', newline='', encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile, delimiter=';',
+        writer = csv.writer(csvfile, delimiter=':',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerows(data)
         
@@ -221,6 +310,10 @@ def read_teams(regions):
         email, origin, event, team = p
 
         origininfo = TeamOrigins[origin]
+        if origin.find('Rukami') == 0 and len(event) == 0:
+            event = RUKAMI_REST_TOPIC
+
+        assert len(event) > 0, p
 
         # check date costistency
         if origin not in all_events:
@@ -231,8 +324,8 @@ def read_teams(regions):
         
         emailhash = hash(email)
         teamhash = hash(origin + event + team)
-        teaminfo[teamhash] = list(p[1:]) + [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...']
-        
+        teaminfo[teamhash] = [origin, event, team] + [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...']
+
         if teamhash not in teams:
             teams[teamhash] = set([])
         teams[teamhash].add(emailhash)
@@ -243,10 +336,17 @@ def read_teams(regions):
                 has_regions += 1
                 if FILTER_REGIONS and regions[email] in FILTER_REGIONS:
                     reg_filter += 1
-
+    if USE_TOPICS:
+        topics_all, topics = read_topics(TOPICS_FILE)
+        event_topics = read_event_topics(EVENT_TOPICS_FILE, topics, all_events)
+    else:
+        topics_all = event_topics = None
+    
     debug('events:')
     for o,events in all_events.items():
         debug('\t{}: {}'.format(o, len(events)))
+#        for e in events:
+#            debug('\t\t{}: [{}]'.format(e, '|'.join(event_topics[o][e])))
     debug('students:', len(emails))
     debug('students with regions:', has_regions)
     if FILTER_REGIONS:
@@ -274,6 +374,30 @@ def read_teams(regions):
 
     debug('teams after cleaning:', len(teams))
 
+    if USE_TOPICS:
+        teams_by_topics = {}
+        for t in teams:
+            origin, event = teaminfo[t][0:2]
+            tops = event_topics[origin][event]
+            for top in tops:
+                if top not in teams_by_topics:
+                    teams_by_topics[top] = {}
+                o = CONVERT_ORIGIN_NAME(origin)    
+                if o not in teams_by_topics[top]:
+                    teams_by_topics[top][o] = 0
+                teams_by_topics[top][o] += 1
+
+        debug('team topics:')
+        for top in sorted(teams_by_topics.keys()):
+            tt = teams_by_topics[top]
+            project_parts = []
+            if 'ПБ' in tt:
+                project_parts.append('ПБ ' + str(tt['ПБ']))
+            if 'Rukami' in tt:
+                project_parts.append('Rukami ' + str(tt['Rukami']))
+            debug('{}:{}:{}'.format(top,
+                                    tt['ОНТИ'] if 'ОНТИ' in tt else '',
+                                    ','.join(project_parts)))
     teamsizes = {}
     for e in teams.values():
         num = len(e)
@@ -287,13 +411,27 @@ def read_teams(regions):
     for num in sorted(teamsizes.keys(), reverse=True):
         debug('{}: {}'.format(num, teamsizes[num]))
 
-    return teams, teaminfo, emails
+    return teams, teaminfo, emails, event_topics
 
 # ------------------------------------------------------------------------------
 # Graph construction
 # ------------------------------------------------------------------------------
 
-def build_graph(teams, teaminfo, emails, regions):
+def early_team(t1, t2, teaminfo):
+    ti1 = teaminfo[t1]
+    ti2 = teaminfo[t2]
+    t1origin, t1event = ti1[0:2]
+    t2origin, t2event = ti2[0:2]
+    t1origininfo = TeamOrigins[t1origin]
+    t2origininfo = TeamOrigins[t2origin]
+    t1date = t1origininfo['dates'] if isinstance(t1origininfo['dates'], datetime.date) else t1origininfo['dates'][t1event] 
+    t2date = t2origininfo['dates'] if isinstance(t2origininfo['dates'], datetime.date) else t2origininfo['dates'][t2event]
+    if t1date <= t2date:
+        return t1
+    else:
+        return t2
+
+def build_graph(teams, teaminfo, emails, regions, event_topics):
     team_graph_edges = {}
     matched_emails = {}
     teamindexes = {}
@@ -398,20 +536,21 @@ def build_graph(teams, teaminfo, emails, regions):
         debug()
         debug('graph size: v {} e {}'.format(g.vcount(), g.ecount()))            
 
-        debug('calculating clusters...')
-        c = g.clusters(igraph.WEAK)
-        debug('clusters:', len(c))
-        giant = c.giant()
-        debug('the giant cluster: v {} e {}'.format(giant.vcount(), giant.ecount()))
+        if CALCULATE_CLUSTERS:
+            debug('calculating clusters...')
+            c = g.clusters(igraph.WEAK)
+            debug('clusters:', len(c))
+            giant = c.giant()
+            debug('the giant cluster: v {} e {}'.format(giant.vcount(), giant.ecount()))
 
-        giant_students = set([])
-        for t in giant.vs['team']:
-            assert t in teams
-            for e in teams[t]:
-                if not e in giant_students:
-                    giant_students.add(e)
+            giant_students = set([])
+            for t in giant.vs['team']:
+                assert t in teams
+                for e in teams[t]:
+                    if not e in giant_students:
+                        giant_students.add(e)
         
-        debug('the giant cluster students:', len(giant_students))
+            debug('the giant cluster students:', len(giant_students))
 
     # counters
     matches = {}
@@ -421,6 +560,13 @@ def build_graph(teams, teaminfo, emails, regions):
     debug('building output...')
     teamids = set([])
     csv_data = []
+
+    teams_by_topics_int = {}
+    teams_by_topics_union = {}
+
+    topics_int_start = {}
+    topics_union_start = {}
+
     for eh, keyhashes in matched_emails.items():
         m_emails = tuple(keyhashes[0])
         num = len(m_emails)
@@ -429,9 +575,17 @@ def build_graph(teams, teaminfo, emails, regions):
         else:
             matches[num] = 1
         teams_to_print = set([])
+        start_team = None
         for keyhash in tuple(keyhashes[1]):
             teamkey = team_graph_edges[keyhash]
             t1, t2 = teamkey
+            if start_team is None:
+                start_team = early_team(t1, t2, teaminfo)
+            else:
+                if t1 not in teams_to_print:
+                    start_team = early_team(t1, start_team, teaminfo)
+                if t2 not in teams_to_print:
+                    start_team = early_team(t2, start_team, teaminfo)
             teams_to_print.add(t1)
             teams_to_print.add(t2)
         num2 = len(teams_to_print)
@@ -440,7 +594,49 @@ def build_graph(teams, teaminfo, emails, regions):
         else:
             paths[num2] = 1
 
+        start_origin, start_event = teaminfo[start_team][0:2]
+
+        if USE_TOPICS:
+            start_origin_top = event_topics[start_origin][start_event]
+
+            topics_int = set([])
+            topics_union = set([])
+            first = True
+            for teamkey in tuple(teams_to_print):
+                origin, event = teaminfo[teamkey][0:2]
+                et = event_topics[origin][event]
+                date = TeamOrigins[origin]['dates']
+                if not isinstance(date, datetime.date):
+                    date = date[event]
+                if first:
+                    topics_int = topics_union = et
+                    first = False
+                else:
+                    topics_int = topics_int & et
+                    topics_union = topics_union | et
+                
+            o1 = CONVERT_ORIGIN_NAME(start_origin)
+            for top in topics_int:
+                if top not in teams_by_topics_int:
+                    teams_by_topics_int[top] = 0
+                    teams_by_topics_int[top] += 1
+                if top not in topics_int_start:
+                    topics_int_start[top] = {}
+                if o1 not in topics_int_start[top]:
+                    topics_int_start[top][o1] = 0
+                    topics_int_start[top][o1] += 1
+            for top in topics_union:
+                if top not in teams_by_topics_union:
+                    teams_by_topics_union[top] = 0
+                    teams_by_topics_union[top] += 1
+                if top not in topics_union_start:
+                    topics_union_start[top] = {}
+                if o1 not in topics_union_start[top]:
+                    topics_union_start[top][o1] = 0
+                    topics_union_start[top][o1] += 1
+
         if not SAVE_CSV:
+            csv_data.append(1)
             continue
         # output matches
         data = []
@@ -474,6 +670,21 @@ def build_graph(teams, teaminfo, emails, regions):
     for num in sorted(paths.keys(), reverse=True):
         debug('{}: {}'.format(num, paths[num]))
 
+    if USE_TOPICS:
+        debug('matches team topics:')
+        for top in sorted(teams_by_topics_union.keys()):
+            parts1 = []
+            parts2 = []
+            for o in ('ОНТИ', 'ПБ', 'Rukami'):
+                if top in topics_int_start and o in topics_int_start[top]:
+                    parts1.append(o + ' ' + str(topics_int_start[top][o]))
+                if top in topics_union_start and o in topics_union_start[top]:
+                    parts2.append(o + ' ' + str(topics_union_start[top][o]))
+                debug('{}:{} ({}):{} ({})'.format(top,
+                                                  teams_by_topics_union[top],
+                                                  ','.join(parts2),
+                                                  teams_by_topics_int[top] if top in teams_by_topics_int else '',
+                                                  ','.join(parts1)))
     return g, csv_data
 
 def plot_graph(g, filename):
@@ -493,8 +704,8 @@ if __name__ == '__main__':
 
     init_teams()
     r = read_regions(REGIONS_FILE)
-    t, ti, e = read_teams(r)
-    graph, data = build_graph(t, ti, e, r)
+    t, ti, e, et = read_teams(r)
+    graph, data = build_graph(t, ti, e, r, et)
     if SAVE_CSV:
         save_csv(RESULT_CSV, data)
     if BUILD_GRAPH:
