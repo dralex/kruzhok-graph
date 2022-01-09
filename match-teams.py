@@ -23,7 +23,7 @@ FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
 SAVE_CSV = False
-SKIP_SELECTION = True
+SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
@@ -45,44 +45,43 @@ TeamOrigins = {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': join(DATADIR, 'pb-teams-2-hash.csv'),
+        'teams': join(DATADIR, 'talent-pb-teams-hash.csv'),
         'level': 1,
-        'dates': join(DATADIR, 'pb-dates.csv'),
+        'dates': join(DATADIR, 'talent-pb-dates.csv'),
         'color': 'red',
-        'selections': {'Полуфинал MultiTechBattle': 'Финал MultiTechBattle',
-                       '2 этап Skolkovo Junior Challenge-2020': 'Финал Skolkovo Junior Challenge 2020'},
-        'limit': None
+        'selections': None,
+        'limit': 10
     },
     'KRUZHOK.PRO': {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': join(DATADIR, 'kruzhokpro-teams-hash.csv'),
+        'teams': join(DATADIR, 'talent-kruzhokpro-teams-hash.csv'),
         'level': 1,
-        'dates': join(DATADIR, 'kruzhokpro-dates.csv'),
-        'color': 'red',
+        'dates': join(DATADIR, 'talent-kruzhokpro-dates.csv'),
+        'color': 'red4',
         'selections': None,
         'limit': None
     },
-    'Архипелаг 20.35': {
+    'Talent-2035': {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': join(DATADIR, 'archipelago-teams-hash.csv'),
+        'teams': join(DATADIR, 'talent-2035-proj-teams-hash.csv'),
         'level': 1,
-        'dates': datetime.date(2020, 11, 12),
-        'color': 'red',
+        'dates': join(DATADIR, 'talent-2035-proj-dates.csv'),
+        'color': 'purple',
         'selections': None,
         'limit': None
     },
-    'МПШ': {
+    'Sea': {
         'active': True,
         'type': 'projects',
         'season': None,
-        'teams': join(DATADIR, 'pb-mpsh-teams-hash.csv'),
+        'teams': join(DATADIR, 'talent-sea-teams-hash.csv'),
         'level': 1,
-        'dates': datetime.date(2019, 8, 12),
-        'color': 'red',
+        'dates': join(DATADIR, 'talent-sea-dates.csv'),
+        'color': 'purple',
         'selections': None,
         'limit': None
     },
@@ -174,6 +173,29 @@ TeamOrigins = {
         'selections': 'ОНТИ-2020/21',
         'limit': 6
     },
+    'ОНТИ-2021/22': {
+        'active': True,
+        'type': 'onti',
+        'season': 2021,
+        'teams': join(DATADIR, 'talent-onti-teams-2122-hash.csv'),
+        'level': 2,
+        'dates': datetime.date(2021, 11, 15),
+        'color': 'white',
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-2021/22-СТУД': {
+        'active': True,
+        'type': 'onti',
+        'season': 2021,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2122-hash.csv'),
+        'level': 2,
+        'dates': datetime.date(2021, 10, 1),
+        'color': 'grey',
+        'selections': None,
+        'limit': 6
+    }
+
 }
 
 def CONVERT_ORIGIN_NAME(origin):
@@ -464,9 +486,9 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             ti2 = teaminfo[t2]
             t2origin = ti2[0]
             t2event = ti2[1]
+            t2origininfo = TeamOrigins[t2origin]
             if BUILD_GRAPH:
                 t2name = ti2[3]
-                t2origininfo = TeamOrigins[t2origin]
                 t2level = t2origininfo['level']
                 t2color = t2origininfo['color']
                 t2date = t2origininfo['dates'] if isinstance(t2origininfo['dates'], datetime.date) else t2origininfo['dates'][t2event]
@@ -667,8 +689,12 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     for num in sorted(matches.keys(), reverse=True):
         debug('{}: {}'.format(num, matches[num]))
     debug('team sequences:')
+    plus3 = 0
     for num in sorted(paths.keys(), reverse=True):
+        if num > 2:
+            plus3 += paths[num]
         debug('{}: {}'.format(num, paths[num]))
+    debug('3+: {}'.format(plus3))
 
     if USE_TOPICS:
         debug('matches team topics:')
