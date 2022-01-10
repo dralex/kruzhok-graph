@@ -125,7 +125,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1819-hash.csv'),
         'level': 2,
         'dates': datetime.date(2018, 11, 15),
-        'color': 'blue3',
+        'color': 'blue',
         'selections': None,
         'limit': 6
     },
@@ -136,8 +136,19 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1819-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
-        'color': 'blue',
+        'color': 'blue3',
         'selections': 'ОНТИ-2018/19(2)',
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2018/19(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2018,
+        'teams': join(DATADIR, 'onti-teams-1819-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2019, 3, 1),
+        'color': 'blue4',
+        'selections': None,
         'limit': 6
     },
     'ОНТИ-2019/20(2)': {
@@ -147,7 +158,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1920-hash.csv'),
         'level': 2,
         'dates': datetime.date(2019, 11, 15),
-        'color': 'green3',
+        'color': 'green',
         'selections': None,
         'limit': 6
     },
@@ -158,8 +169,19 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1920-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
-        'color': 'green',
+        'color': 'green3',
         'selections': 'ОНТИ-2019/20(2)',
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2019/20(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2019,
+        'teams': join(DATADIR, 'onti-stud-teams-1920-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2020, 3, 1),
+        'color': 'green4',
+        'selections': None,
         'limit': 6
     },
     'ОНТИ-2020/21': {
@@ -195,7 +217,7 @@ TeamOrigins = {
         'selections': None,
         'limit': 6
     },
-    'ОНТИ-2021/22-СТУД': {
+    'ОНТИ-СТУД-2021/22': {
         'active': True,
         'type': 'onti',
         'season': 2021,
