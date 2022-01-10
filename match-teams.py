@@ -17,7 +17,7 @@ from os.path import join
 DEBUG = True
 TEAM_SIZE = 2
 BUILD_GRAPH = True
-CALCULATE_CLUSTERS = False
+CALCULATE_CLUSTERS = True
 PLOT_GRAPH = True
 FULL_GRAPH = True
 USE_TOPICS = False
@@ -63,24 +63,35 @@ TeamOrigins = {
         'selections': None,
         'limit': None
     },
-    'Talent-2035': {
+    'ТАЛАНТ-2035': {
         'active': True,
         'type': 'projects',
         'season': None,
         'teams': join(DATADIR, 'talent-2035-proj-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-2035-proj-dates.csv'),
-        'color': 'purple',
+        'color': 'red3',
         'selections': None,
         'limit': None
     },
-    'Sea': {
+    'МОРРОБ': {
         'active': True,
         'type': 'projects',
         'season': None,
         'teams': join(DATADIR, 'talent-sea-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-sea-dates.csv'),
+        'color': 'purple',
+        'selections': None,
+        'limit': None
+    },
+    'УЧЕБУ': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'talent-futsci-teams-hash.csv'),
+        'level': 1,
+        'dates': join(DATADIR, 'talent-futsci-dates.csv'),
         'color': 'purple',
         'selections': None,
         'limit': None
@@ -114,7 +125,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1819-hash.csv'),
         'level': 2,
         'dates': datetime.date(2018, 11, 15),
-        'color': 'blue4',
+        'color': 'blue3',
         'selections': None,
         'limit': 6
     },
@@ -136,7 +147,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1920-hash.csv'),
         'level': 2,
         'dates': datetime.date(2019, 11, 15),
-        'color': 'green4',
+        'color': 'green3',
         'selections': None,
         'limit': 6
     },
@@ -729,9 +740,15 @@ def plot_graph(g, filename):
 if __name__ == '__main__':
 
     init_teams()
+    debug()
+    debug('1. reading teams data...')
     r = read_regions(REGIONS_FILE)
     t, ti, e, et = read_teams(r)
+    debug()
+    debug('2. building team graph...')
     graph, data = build_graph(t, ti, e, r, et)
+    debug()
+    debug('3. saving results...')
     if SAVE_CSV:
         save_csv(RESULT_CSV, data)
     if BUILD_GRAPH:
