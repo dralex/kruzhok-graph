@@ -16,6 +16,7 @@ from os.path import join
 
 DEBUG = True
 TEAM_SIZE = 2
+USE_GITHUB = True
 BUILD_GRAPH = True
 CALCULATE_CLUSTERS = True
 PLOT_GRAPH = True
@@ -34,6 +35,7 @@ DATADIR = 'data'
 REGIONS_FILE = join(DATADIR, 'regions.csv')
 TOPICS_FILE = join(DATADIR, 'topics.csv')
 EVENT_TOPICS_FILE = join(DATADIR, 'events-topics.csv')
+GITHUBS_FILE = join(DATADIR, 'github-users.csv')
 RUKAMI_REST_TOPIC = 'Прочее'
 
 # ------------------------------------------------------------------------------
@@ -282,6 +284,14 @@ def read_regions(fname):
             users[user] = int(code)
     return users
 
+def read_githubs(fname):
+    users = set([])
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
+    for row in reader:
+        if len(row) == 1 and len(row[0]) > 0:
+            users.add(hash(row[0]))
+    return users
+
 def read_topics(fname):
     topics = {}
     topics_all = set()
@@ -344,7 +354,7 @@ def init_teams():
         if isinstance(origin['dates'], str):
             origin['dates'] = read_dates(origin['dates'])
 
-def read_teams(regions):
+def read_teams(regions, githubs):
     participants = []
     for origin,data in TeamOrigins.items():
         if not data['active']:
@@ -352,6 +362,8 @@ def read_teams(regions):
         participants += read_participants(data['teams'],
                                           origin)
     debug('participants:', len(participants))
+    if USE_GITHUB:
+        debug('githubs:', len(githubs))
     
     all_events = {}
 
@@ -359,6 +371,7 @@ def read_teams(regions):
     teams = {}
     emails = {}
     has_regions = 0
+    has_github = 0
     reg_filter = 0
 
     for p in participants:
@@ -391,6 +404,9 @@ def read_teams(regions):
                 has_regions += 1
                 if FILTER_REGIONS and regions[email] in FILTER_REGIONS:
                     reg_filter += 1
+            if USE_GITHUB:
+                if emailhash in githubs:
+                    has_github += 1
     if USE_TOPICS:
         topics_all, topics = read_topics(TOPICS_FILE)
         event_topics = read_event_topics(EVENT_TOPICS_FILE, topics, all_events)
@@ -404,6 +420,8 @@ def read_teams(regions):
 #            debug('\t\t{}: [{}]'.format(e, '|'.join(event_topics[o][e])))
     debug('students:', len(emails))
     debug('students with regions:', has_regions)
+    if USE_GITHUB:
+        debug('students with github:', has_github)
     if FILTER_REGIONS:
         debug('students with filter {}: {}'.format(FILTER_REGIONS, reg_filter))
     debug('teams:', len(teams))
@@ -465,6 +483,26 @@ def read_teams(regions):
     debug('team sizes:')
     for num in sorted(teamsizes.keys(), reverse=True):
         debug('{}: {}'.format(num, teamsizes[num]))
+
+    if USE_GITHUB:
+        debug()
+        debug('github teams:')
+        gh_once = 0
+        gh_all = 0
+        for t,e in teams.items():
+            check_once = False
+            check_all = True
+            for email in e:
+                if email in githubs:
+                    check_once = True
+                else:
+                    check_all = False
+            if check_once:
+                gh_once += 1
+            if check_all:
+                gh_all += 1
+        debug('github present teams:', gh_once)
+        debug('github whole teams:', gh_all)
 
     return teams, teaminfo, emails, event_topics
 
@@ -765,7 +803,11 @@ if __name__ == '__main__':
     debug()
     debug('1. reading teams data...')
     r = read_regions(REGIONS_FILE)
-    t, ti, e, et = read_teams(r)
+    if USE_GITHUB:
+        g = read_githubs(GITHUBS_FILE)
+    else:
+        g = set([])
+    t, ti, e, et = read_teams(r, g)
     debug()
     debug('2. building team graph...')
     graph, data = build_graph(t, ti, e, r, et)
