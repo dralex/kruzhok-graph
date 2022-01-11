@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Kruzhok Movement teams matching tool
 #
-# Alexey Fedoseev <aleksey@fedoseev.net>, 2020
+# Alexey Fedoseev <aleksey@fedoseev.net>, 2020-2022
 # ------------------------------------------------------------------------------
 
 import csv
