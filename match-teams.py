@@ -19,7 +19,7 @@ TEAM_SIZE = 2
 USE_GITHUB = True
 BUILD_GRAPH = True
 CALCULATE_CLUSTERS = True
-PLOT_GRAPH = True
+PLOT_GRAPH = False
 FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
@@ -671,6 +671,8 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     topics_int_start = {}
     topics_union_start = {}
 
+    mixed_paths = 0
+
     for eh, keyhashes in matched_emails.items():
         m_emails = tuple(keyhashes[0])
         num = len(m_emails)
@@ -692,7 +694,18 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                     start_team = early_team(t2, start_team, teaminfo)
             teams_to_print.add(t1)
             teams_to_print.add(t2)
+
         num2 = len(teams_to_print)
+        origins = set([])
+
+        for t in teams_to_print:
+            ti = teaminfo[t]
+            origin = ti[0]
+            if origin.find('ОНТИ') == 0:
+                origins.add('ОНТИ')
+            else:
+                origins.add(origin)
+
         if num2 in paths:
             paths[num2] += 1
         else:
@@ -777,6 +790,8 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             plus3 += paths[num]
         debug('{}: {}'.format(num, paths[num]))
     debug('3+: {}'.format(plus3))
+    debug()
+    debug('sequences ONTI+x: {}'.format(mixed_paths))
 
     if USE_TOPICS:
         debug('matches team topics:')
