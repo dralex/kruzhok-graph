@@ -706,6 +706,9 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             else:
                 origins.add(origin)
 
+        if 'ОНТИ' in origins and len(origins) >= 2:
+            mixed_paths += 1
+
         if num2 in paths:
             paths[num2] += 1
         else:
