@@ -146,7 +146,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2018,
-        'teams': join(DATADIR, 'onti-teams-1819-f-hash.csv'),
+        'teams': join(DATADIR, 'onti-stud-teams-1819-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
         'color': 'blue4',
@@ -204,8 +204,19 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-2021-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2021, 3, 1),
-        'color': 'orange',
+        'color': 'gold',
         'selections': 'ОНТИ-2020/21',
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2020/21(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2020,
+        'teams': join(DATADIR, 'onti-stud-teams-2021-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2021, 3, 1),
+        'color': 'orange',
+        'selections': None,
         'limit': 6
     },
     'ОНТИ-2021/22': {
@@ -784,7 +795,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                                                   ','.join(parts1)))
     return g, csv_data
 
-def plot_graph(g, filename):
+def plot_graph(g, filenames):
     visual_style = {}
     # Set bbox and margin
     visual_style["bbox"] = (PICTURE_SIZE, PICTURE_SIZE)
@@ -792,10 +803,12 @@ def plot_graph(g, filename):
     visual_style["edge_curved"] = False
     visual_style["edge_width"] = [1 + 4 * (w - 1) for w in g.es['weight']]
     visual_style["vertex_size"] = [20 + 5 * (s - 2) for s in g.vs['size']]
+    debug('building fruchterman reingold layout...')
     visual_style["layout"] = g.layout_fruchterman_reingold(grid="nogrid")
 
-    debug('plotting {}...'.format(filename))
-    igraph.plot(g, filename, **visual_style)
+    for filename in filenames:
+        debug('plotting {}...'.format(filename))
+        igraph.plot(g, filename, **visual_style)
 
 if __name__ == '__main__':
 
@@ -817,5 +830,4 @@ if __name__ == '__main__':
         save_csv(RESULT_CSV, data)
     if BUILD_GRAPH:
         if PLOT_GRAPH:
-            plot_graph(graph, RESULT_PNG)
-            plot_graph(graph, RESULT_SVG)
+            plot_graph(graph, [RESULT_PNG, RESULT_SVG])
