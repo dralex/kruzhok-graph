@@ -19,7 +19,7 @@ TEAM_SIZE = 2
 USE_GITHUB = True
 BUILD_GRAPH = True
 CALCULATE_CLUSTERS = True
-PLOT_GRAPH = False
+PLOT_GRAPH = True
 FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
@@ -30,9 +30,10 @@ RESULT_CSV = 'result.csv'
 MIXED_CSV = 'mixed.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
-PICTURE_SIZE = 4000
+PICTURE_SIZE = 500
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
+FILTER_PARTICIPANT = None
 DATADIR = 'data'
 REGIONS_FILE = join(DATADIR, 'regions.csv')
 TOPICS_FILE = join(DATADIR, 'topics.csv')
@@ -442,19 +443,29 @@ def read_teams(regions, githubs):
     # drop bad teams
     
     to_delete = []
+    goptar_teams = set([])
     for t,e in teams.items():
         size = len(e)
         origininfo = TeamOrigins[teaminfo[t][0]]
         if size == 1 or origininfo['limit'] and size > origininfo['limit']:
             to_delete.append(t)
-        elif FILTER_REGIONS:
-            found = False
-            for emailhash in e:
-                email = emails[emailhash]
-                if email in regions and regions[email] in FILTER_REGIONS:
-                    found = True
-            if not found:
-                to_delete.append(t)
+        else:
+            if FILTER_REGIONS:
+                found = False
+                for emailhash in e:
+                    email = emails[emailhash]
+                    if email in regions and regions[email] in FILTER_REGIONS:
+                        found = True
+                if not found:
+                    to_delete.append(t)
+            if FILTER_PARTICIPANT:
+                found = False
+                for emailhash in e:
+                    email = emails[emailhash]
+                    if email == FILTER_PARTICIPANT:
+                        found = True
+                if not found:
+                    to_delete.append(t)                
     for t in to_delete:
         del teams[t]
 
@@ -698,6 +709,15 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             teams_to_print.add(t1)
             teams_to_print.add(t2)
 
+        if FILTER_PARTICIPANT:
+            for eml in m_emails:
+                if emails[eml] == FILTER_PARTICIPANT:
+                    path = []
+                    for t in teams_to_print:
+                        ti = teaminfo[t]
+                        path.append(ti[0]+'-'+ti[1])
+                    debug("participant's team paths:",' '.join(path))
+    
         num2 = len(teams_to_print)
         origins = set([])
 
