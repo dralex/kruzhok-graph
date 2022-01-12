@@ -24,8 +24,10 @@ FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
 SAVE_CSV = False
+SAVE_MIXED_CSV = False
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
+MIXED_CSV = 'mixed.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
 PICTURE_SIZE = 4000
@@ -353,7 +355,7 @@ def save_csv(fname, data):
         writer = csv.writer(csvfile, delimiter=':',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerows(data)
-        
+
 # ------------------------------------------------------------------------------
 # Data initializers
 # ------------------------------------------------------------------------------
@@ -672,6 +674,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     topics_union_start = {}
 
     mixed_paths = 0
+    mixed_results = []
 
     for eh, keyhashes in matched_emails.items():
         m_emails = tuple(keyhashes[0])
@@ -698,6 +701,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
         num2 = len(teams_to_print)
         origins = set([])
 
+        events = []
         for t in teams_to_print:
             ti = teaminfo[t]
             origin = ti[0]
@@ -705,9 +709,14 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                 origins.add('ОНТИ')
             else:
                 origins.add(origin)
+            events.append(ti[0]+'-'+ti[1])
 
         if 'ОНТИ' in origins and len(origins) >= 2:
             mixed_paths += 1
+            eml_list = []
+            for eml in m_emails:
+                eml_list.append(emails[eml])
+            mixed_results.append((';'.join(eml_list), ';'.join(events)))
 
         if num2 in paths:
             paths[num2] += 1
@@ -811,7 +820,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                                                   ','.join(parts2),
                                                   teams_by_topics_int[top] if top in teams_by_topics_int else '',
                                                   ','.join(parts1)))
-    return g, csv_data
+    return g, csv_data, mixed_results
 
 def plot_graph(g, filenames):
     visual_style = {}
@@ -841,11 +850,13 @@ if __name__ == '__main__':
     t, ti, e, et = read_teams(r, g)
     debug()
     debug('2. building team graph...')
-    graph, data = build_graph(t, ti, e, r, et)
+    graph, data, mixed_data = build_graph(t, ti, e, r, et)
     debug()
     debug('3. saving results...')
     if SAVE_CSV:
         save_csv(RESULT_CSV, data)
+    if SAVE_MIXED_CSV:
+        save_csv(MIXED_CSV, mixed_data)
     if BUILD_GRAPH:
         if PLOT_GRAPH:
             plot_graph(graph, [RESULT_PNG, RESULT_SVG])
