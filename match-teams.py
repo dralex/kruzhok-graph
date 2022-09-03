@@ -17,9 +17,9 @@ from os.path import join
 DEBUG = True
 TEAM_SIZE = 2
 USE_GITHUB = True
-BUILD_GRAPH = True
-CALCULATE_CLUSTERS = True
-PLOT_GRAPH = True
+BUILD_GRAPH = False
+CALCULATE_CLUSTERS = False
+PLOT_GRAPH = False
 FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
@@ -30,7 +30,7 @@ RESULT_CSV = 'result.csv'
 MIXED_CSV = 'mixed.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
-PICTURE_SIZE = 500
+PICTURE_SIZE = 4000
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
 FILTER_PARTICIPANT = None
@@ -64,6 +64,28 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-kruzhokpro-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-kruzhokpro-dates.csv'),
+        'color': 'red4',
+        'selections': None,
+        'limit': None
+    },
+    'FOSS': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'talent-opensource-teams-hash.csv'),
+        'level': 1,
+        'dates': join(DATADIR, 'talent-opensource-dates.csv'),
+        'color': 'red4',
+        'selections': None,
+        'limit': None
+    },
+    'ВОСТОК': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'talent-vostok-teams-hash.csv'),
+        'level': 1,
+        'dates': join(DATADIR, 'talent-vostok-dates.csv'),
         'color': 'red4',
         'selections': None,
         'limit': None
@@ -149,7 +171,7 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2018,
-        'teams': join(DATADIR, 'onti-stud-teams-1819-f-hash.csv'),
+        'teams': join(DATADIR, 'talent-onti-teams-stud-1819-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
         'color': 'blue4',
@@ -178,22 +200,33 @@ TeamOrigins = {
         'selections': 'ОНТИ-2019/20(2)',
         'limit': 6
     },
-    'ОНТИ-СТУД-2019/20(Ф)': {
+    'ОНТИ-СТУД-2019/20(2)': {
         'active': True,
         'type': 'onti',
         'season': 2019,
-        'teams': join(DATADIR, 'onti-stud-teams-1920-f-hash.csv'),
+        'teams': join(DATADIR, 'talent-onti-teams-stud-1920-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
         'color': 'green4',
         'selections': None,
         'limit': 6
     },
+    'ОНТИ-СТУД-2019/20(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2019,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-1920-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2020, 3, 1),
+        'color': 'green4',
+        'selections': 'ОНТИ-СТУД-2019/20(2)',
+        'limit': 6
+    },
     'ОНТИ-2020/21': {
         'active': True,
         'type': 'onti',
         'season': 2020,
-        'teams': join(DATADIR, 'onti-teams-2021-hash.csv'),
+        'teams': join(DATADIR, 'talent-onti-teams-2021-hash.csv'),
         'level': 2,
         'dates': datetime.date(2020, 11, 15),
         'color': 'yellow',
@@ -204,25 +237,36 @@ TeamOrigins = {
         'active': True,
         'type': 'onti',
         'season': 2020,
-        'teams': join(DATADIR, 'onti-teams-2021-f-hash.csv'),
+        'teams': join(DATADIR, 'talent-onti-teams-2021-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2021, 3, 1),
         'color': 'gold',
         'selections': 'ОНТИ-2020/21',
         'limit': 6
     },
+    'ОНТИ-СТУД-2020/21': {
+        'active': True,
+        'type': 'onti',
+        'season': 2020,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2021-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2020, 11, 1),
+        'color': 'yellow',
+        'selections': None,
+        'limit': 6
+    },    
     'ОНТИ-СТУД-2020/21(Ф)': {
         'active': True,
         'type': 'onti',
         'season': 2020,
-        'teams': join(DATADIR, 'onti-stud-teams-2021-f-hash.csv'),
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2021-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2021, 3, 1),
         'color': 'orange',
-        'selections': None,
+        'selections': 'ОНТИ-СТУД-2020/21',
         'limit': 6
     },
-    'ОНТИ-2021/22': {
+    'ОНТИ-2021/22(2)': {
         'active': True,
         'type': 'onti',
         'season': 2021,
@@ -233,6 +277,17 @@ TeamOrigins = {
         'selections': None,
         'limit': 6
     },
+    'ОНТИ-2021/22(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2021,
+        'teams': join(DATADIR, 'talent-onti-teams-2122-f-hash.csv'),
+        'level': 2,
+        'dates': datetime.date(2021, 11, 15),
+        'color': 'grey',
+        'selections': 'ОНТИ-2021/22(2)',
+        'limit': 6
+    },
     'ОНТИ-СТУД-2021/22': {
         'active': True,
         'type': 'onti',
@@ -240,11 +295,21 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-2122-hash.csv'),
         'level': 2,
         'dates': datetime.date(2021, 10, 1),
-        'color': 'grey',
+        'color': 'grey3',
         'selections': None,
         'limit': 6
+    },
+    'ОНТИ-СТУД-2021/22(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2021,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2122-f-hash.csv'),
+        'level': 2,
+        'dates': datetime.date(2022, 3, 1),
+        'color': 'grey4',
+        'selections': 'ОНТИ-СТУД-2021/22',
+        'limit': 6
     }
-
 }
 
 def CONVERT_ORIGIN_NAME(origin):
@@ -687,6 +752,9 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     mixed_paths = 0
     mixed_results = []
 
+    onti_pb_paths = 0
+    onti_pb_results = []
+
     for eh, keyhashes in matched_emails.items():
         m_emails = tuple(keyhashes[0])
         num = len(m_emails)
@@ -737,6 +805,13 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             for eml in m_emails:
                 eml_list.append(emails[eml])
             mixed_results.append((';'.join(eml_list), ';'.join(events)))
+
+        if 'ОНТИ' in origins and 'ПБ' in origins:
+            onti_pb_paths += 1
+            eml_list = []
+            for eml in m_emails:
+                eml_list.append(emails[eml])
+            onti_pb_results.append((';'.join(eml_list), ';'.join(events)))            
 
         if num2 in paths:
             paths[num2] += 1
@@ -824,6 +899,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     debug('3+: {}'.format(plus3))
     debug()
     debug('sequences ONTI+x: {}'.format(mixed_paths))
+    debug('sequences ONTI+PB: {}'.format(onti_pb_paths))
 
     if USE_TOPICS:
         debug('matches team topics:')
