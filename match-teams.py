@@ -9,6 +9,7 @@ import csv
 import igraph
 import datetime
 from os.path import join
+import re
 
 # ------------------------------------------------------------------------------
 # Global constants and flags
@@ -24,10 +25,8 @@ FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
 SAVE_CSV = False
-SAVE_MIXED_CSV = False
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
-MIXED_CSV = 'mixed.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
 PICTURE_SIZE = 4000
@@ -48,7 +47,7 @@ RUKAMI_REST_TOPIC = 'Прочее'
 TeamOrigins = {
     'ПБ':{
         'active': True,
-        'type': 'projects',
+        'type': 'hackathon',
         'season': None,
         'teams': join(DATADIR, 'talent-pb-teams-hash.csv'),
         'level': 1,
@@ -59,7 +58,7 @@ TeamOrigins = {
     },
     'KRUZHOK.PRO': {
         'active': True,
-        'type': 'projects',
+        'type': 'hackathon',
         'season': None,
         'teams': join(DATADIR, 'talent-kruzhokpro-teams-hash.csv'),
         'level': 1,
@@ -103,7 +102,7 @@ TeamOrigins = {
     },
     'МОРРОБ': {
         'active': True,
-        'type': 'projects',
+        'type': 'contest',
         'season': None,
         'teams': join(DATADIR, 'talent-sea-teams-hash.csv'),
         'level': 1,
@@ -634,10 +633,12 @@ def early_team(t1, t2, teaminfo):
 def build_graph(teams, teaminfo, emails, regions, event_topics):
     team_graph_edges = {}
     matched_emails = {}
+    g = None
     teamindexes = {}
-    g = igraph.Graph(directed=True)
 
-    debug()
+    if BUILD_GRAPH:
+        g = igraph.Graph(directed=True)
+
     debug('calculating graph...')
     # rich O(N^2) algorithm
     for t1,t1emails in teams.items():
@@ -699,11 +700,11 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                 if t1origintype == 'onti' and t2origintype == 'onti' and t1originyear == t2originyear:
                     continue
                 
-                if t1origin == t2origin and t1origintype == 'project' and t1originselection:
+                if t1origin == t2origin and t1origintype != 'onti' and t1originselection:
                     check_array = sorted((t1event, t2event))
                     if check_array[0] in t1originselection and check_array[1] == t1originselection[check_array[0]]:
                         continue
-
+                    
             if BUILD_GRAPH and (FULL_GRAPH and common_len > 0 or
                                 not FULL_GRAPH and common_len >= max(t1level, t2level)):
                 if t1 not in teamindexes:
@@ -755,6 +756,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     # counters
     matches = {}
     paths = {}
+    paths_onti = {}
     
     debug()
     debug('building output...')
@@ -768,10 +770,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     topics_union_start = {}
 
     mixed_paths = 0
-    mixed_results = []
-
-    onti_pb_paths = 0
-    onti_pb_results = []
+    double_onti = []
 
     for eh, keyhashes in matched_emails.items():
         m_emails = tuple(keyhashes[0])
@@ -805,37 +804,48 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                     debug("participant's team paths:",' '.join(path))
     
         num2 = len(teams_to_print)
-        origins = set([])
 
-        events = []
+        origins = set([])
+        onti_seasons = set([])
+        onti_seasons_num = 0
         for t in teams_to_print:
             ti = teaminfo[t]
             origin = ti[0]
             if origin.find('ОНТИ') == 0:
                 origins.add('ОНТИ')
+                season = TeamOrigins[origin]['season']
+                if season in onti_seasons:
+                    onti_seasons_num += 1
+                else:
+                    onti_seasons.add(season)
             else:
                 origins.add(origin)
-            events.append(ti[0]+'-'+ti[1])
-
         if 'ОНТИ' in origins and len(origins) >= 2:
             mixed_paths += 1
-            eml_list = []
-            for eml in m_emails:
-                eml_list.append(emails[eml])
-            mixed_results.append((';'.join(eml_list), ';'.join(events)))
 
-        if 'ОНТИ' in origins and 'ПБ' in origins:
-            onti_pb_paths += 1
-            eml_list = []
-            for eml in m_emails:
-                eml_list.append(emails[eml])
-            onti_pb_results.append((';'.join(eml_list), ';'.join(events)))            
+        was_final = False
+        final_re = re.compile('ОНТИ.*\(Ф\)')
+        for t in teams_to_print:
+            ti = teaminfo[t]
+            origin = ti[0]
+            if final_re.match(origin):
+                if was_final:
+                    double_onti.append(teams_to_print)
+                    break
+                else:
+                    was_final = True
 
         if num2 in paths:
             paths[num2] += 1
         else:
             paths[num2] = 1
 
+        num3 = num2 - onti_seasons_num
+        if num3 in paths_onti:
+            paths_onti[num3] += 1
+        else:
+            paths_onti[num3] = 1
+            
         start_origin, start_event = teaminfo[start_team][0:2]
 
         if USE_TOPICS:
@@ -913,11 +923,11 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     for num in sorted(paths.keys(), reverse=True):
         if num > 2:
             plus3 += paths[num]
-        debug('{}: {}'.format(num, paths[num]))
+        debug('{}: {} ({})'.format(num, paths[num], paths_onti[num] if num in paths_onti else 0))
     debug('3+: {}'.format(plus3))
     debug()
-    debug('sequences ONTI+x: {}'.format(mixed_paths))
-    debug('sequences ONTI+PB: {}'.format(onti_pb_paths))
+    debug('team sequences ONTI+x: {}'.format(mixed_paths))
+    debug('double ONTI finals: {}'.format(len(double_onti)))
 
     if USE_TOPICS:
         debug('matches team topics:')
@@ -934,7 +944,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                                                   ','.join(parts2),
                                                   teams_by_topics_int[top] if top in teams_by_topics_int else '',
                                                   ','.join(parts1)))
-    return g, csv_data, mixed_results
+    return g, csv_data
 
 def plot_graph(g, filenames):
     visual_style = {}
@@ -964,13 +974,11 @@ if __name__ == '__main__':
     t, ti, e, et = read_teams(r, g)
     debug()
     debug('2. building team graph...')
-    graph, data, mixed_data = build_graph(t, ti, e, r, et)
+    graph, data = build_graph(t, ti, e, r, et)
     debug()
     debug('3. saving results...')
     if SAVE_CSV:
         save_csv(RESULT_CSV, data)
-    if SAVE_MIXED_CSV:
-        save_csv(MIXED_CSV, mixed_data)
     if BUILD_GRAPH:
         if PLOT_GRAPH:
             plot_graph(graph, [RESULT_PNG, RESULT_SVG])
