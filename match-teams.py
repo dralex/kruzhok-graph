@@ -335,11 +335,15 @@ def read_participants(fname, prefix):
     participants = []
     reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
     for row in reader:
-        if len(row) != 3:
+        if len(row) < 3 or len(row) > 4:
             debug('file {} bad line {}'.format(fname, str(row)))
             continue
         if len(row[2].strip()) > 0:
-            participants.append((row[0], prefix, row[1], row[2]))
+            if len(row) == 4:
+                teamid = row[3]
+            else:
+                teamid = None
+            participants.append((row[0], prefix, row[1], row[2], teamid))
     return participants
 
 def read_dates(fname):
@@ -454,14 +458,14 @@ def read_teams(regions, githubs):
     reg_filter = 0
 
     for p in participants:
-        email, origin, event, team = p
+        email, origin, event, team, team_talent_id = p
 
         origininfo = TeamOrigins[origin]
         if origin.find('Rukami') == 0 and len(event) == 0:
             event = RUKAMI_REST_TOPIC
 
         assert len(event) > 0, p
-
+        
         # check date costistency
         if origin not in all_events:
             all_events[origin] = set([])
@@ -471,12 +475,12 @@ def read_teams(regions, githubs):
         
         emailhash = hash(email)
         teamhash = hash(origin + event + team)
-        teaminfo[teamhash] = [origin, event, team] + [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...']
-
+        if teamhash not in teaminfo: 
+            teaminfo[teamhash] = [origin, event, team] + [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...'] + [team_talent_id]
         if teamhash not in teams:
             teams[teamhash] = set([])
         teams[teamhash].add(emailhash)
-            
+
         if emailhash not in emails:
             emails[emailhash] = email
             if email in regions:
@@ -504,6 +508,13 @@ def read_teams(regions, githubs):
     if FILTER_REGIONS:
         debug('students with filter {}: {}'.format(FILTER_REGIONS, reg_filter))
     debug('teams:', len(teams))
+
+    teams_in_talentdb = 0
+    for t in teams.keys():
+        talent_team = teaminfo[t][4]
+        if talent_team:
+            teams_in_talentdb += 1
+    debug('teams in talent db:', teams_in_talentdb)
 
     # drop bad teams
     
@@ -536,6 +547,13 @@ def read_teams(regions, githubs):
 
     debug('teams after cleaning:', len(teams))
 
+    teams_in_talentdb = 0
+    for t in teams.keys():
+        talent_team = teaminfo[t][4]
+        if talent_team:
+            teams_in_talentdb += 1
+    debug('teams in talent db after cleaning:', teams_in_talentdb)
+    
     if USE_TOPICS:
         teams_by_topics = {}
         for t in teams:

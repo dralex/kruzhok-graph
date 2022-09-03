@@ -19,10 +19,14 @@ for f in listdir(FROM_DATADIR):
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)        
         reader = csv.reader(open(old_filename), delimiter=':')
         for row in reader:
-            if len(row) != 3 or row[0].find('@') < 0:
+            if len(row) < 3 or len(row) > 4 or row[0].find('@') < 0:
                 continue
             if len(row[2].strip()) == 0:
                 continue
             hashed_email = sha256(row[0].lower().encode('utf-8')).hexdigest()
-            writer.writerow([hashed_email, row[1], row[2]])
+            if len(row) == 4:
+                teamid = str(row[3])
+            else:
+                teamid = ''
+            writer.writerow([hashed_email, row[1], row[2], teamid])
         output.close()

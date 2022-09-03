@@ -138,7 +138,7 @@ for row in reader:
 
     if export_name not in export_data:
         export_data[export_name] = []
-    export_data[export_name].append((email,eventname,teamname))
+    export_data[export_name].append((email,eventname,teamname,teamid))
 
     if DEBUG:
         if eventorigin not in origins:
