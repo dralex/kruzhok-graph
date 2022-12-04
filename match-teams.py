@@ -23,6 +23,7 @@ BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
 PLOT_GRAPH = True
 FULL_GRAPH = True
+PLOT_LABELS = False
 USE_TOPICS = False
 FILTER_REGIONS = []
 SAVE_CSV = False
@@ -31,8 +32,8 @@ RESULT_CSV = 'result.csv'
 RESULT_TEAMS_CSV = 'result-teams.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
-COLOR_SCHEME = 'events'
-#COLOR_SCHEME = 'sex'
+#COLOR_SCHEME = 'events'
+COLOR_SCHEME = 'sex'
 PICTURE_SIZE = 4000
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
@@ -810,7 +811,8 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                     v = g.add_vertex()
                     teamindexes[t1] = t1idx = v.index
                     t1origin = teaminfo[t1][0]
-                    v['label'] = t1name
+                    if PLOT_LABELS:
+                        v['label'] = t1name
                     v['color'] = t1color
                     v['size'] = len(t1emails)
                     v['team'] = t1
@@ -820,7 +822,8 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                     v = g.add_vertex()
                     teamindexes[t2] = t2idx = v.index
                     t2origin = teaminfo[t2][0]
-                    v['label'] = t2name
+                    if PLOT_LABELS:
+                        v['label'] = t2name
                     v['color'] = t2color
                     v['size'] = len(t2emails)
                     v['team'] = t2
