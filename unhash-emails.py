@@ -7,8 +7,8 @@ import csv
 
 FROM_DATADIR = 'olddata'
 PERSONS_FILE = 'persons.csv'
-TEAMS_FILE = 'mixed.csv'
-OUTPUT_FILE = 'mixed-persons.csv'
+TEAMS_FILE = 'result-teams.csv'
+OUTPUT_FILE = 'result-teams-emails.csv'
 persons = {}
 emails = {}
 
@@ -28,18 +28,18 @@ for f in listdir(FROM_DATADIR):
             hashed_email = sha256(eml.encode('utf-8')).hexdigest()
             emails[hashed_email] = eml
 
-print('reading persons...')
-reader = csv.reader(open(PERSONS_FILE), delimiter=':', quotechar='"')
-for row in reader:
-    if len(row) != 5 or row[0].find('@') < 0:
-        continue
-    email = row[0]
-    lastname = row[1].strip()
-    firstname = row[2]
-    middlename = row[3]
-    birthday = row[4]
-    if email not in persons or len(lastname) > len(persons[email][0]):
-        persons[email] = [lastname, firstname, middlename, birthday]
+# print('reading persons...')
+# reader = csv.reader(open(PERSONS_FILE), delimiter=':', quotechar='"')
+# for row in reader:
+#     if len(row) != 5 or row[0].find('@') < 0:
+#         continue
+#     email = row[0]
+#     lastname = row[1].strip()
+#     firstname = row[2]
+#     middlename = row[3]
+#     birthday = row[4]
+#     if email not in persons or len(lastname) > len(persons[email][0]):
+#         persons[email] = [lastname, firstname, middlename, birthday]
 
 print('converting teams...')
 reader = csv.reader(open(TEAMS_FILE), delimiter=':', quotechar='"')
@@ -47,18 +47,19 @@ output = open(OUTPUT_FILE, 'w', newline = '')
 writer = csv.writer(output, delimiter=':',
                     quotechar='"', quoting=csv.QUOTE_MINIMAL)        
 for row in reader:
-    if len(row) != 2:
+    if len(row) < 5:
         continue
-    hashes = row[0].split(';')
-    events = row[1]
+    static = row[0:5]
+    hashes_num = int(row[4])
     names = []
-    for h in hashes:
+    for h_idx in range(hashes_num):
+        h = row[5 + h_idx]
         assert h in emails, h
         e = emails[h]
-        if e in persons and len(persons[e][0]) > 0:
-            data = ' '.join(persons[e])
-        else:
-            data = 'Неизвестный пользователь'
-        names.append(data)
-    writer.writerow([';'.join(names), events])
+#        if e in persons and len(persons[e][0]) > 0:
+#            data = ' '.join(persons[e])
+#        else:
+#            data = 'Неизвестный пользователь'
+        names.append(e)
+    writer.writerow(list(static) + names)
 output.close()
