@@ -30,3 +30,22 @@ for f in listdir(FROM_DATADIR):
                 teamid = ''
             writer.writerow([hashed_email, row[1], row[2], teamid])
         output.close()
+
+SEX_FILE = 'talent-sex.csv'
+OUTPUT_SEX_FILE = 'sex.csv'
+if isfile(join(FROM_DATADIR, SEX_FILE)):
+    name, ext = f.split('.')
+    old_filename = join(FROM_DATADIR, SEX_FILE)
+    new_filename = join(TO_DATADIR, OUTPUT_SEX_FILE)
+    print('converting {}'.format(old_filename))
+    output = open(new_filename, 'w', newline = '')
+    writer = csv.writer(output, delimiter=':',
+                        quotechar='"', quoting=csv.QUOTE_MINIMAL)        
+    reader = csv.reader(open(old_filename), delimiter=',')
+    for row in reader:
+        if len(row) != 4 or row[0].find('@') < 0:
+            continue
+        hashed_email = sha256(row[0].lower().encode('utf-8')).hexdigest()
+        writer.writerow([hashed_email] + row[1:4])
+    output.close()
+

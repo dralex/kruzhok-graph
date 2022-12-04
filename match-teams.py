@@ -10,6 +10,7 @@ import igraph
 import datetime
 from os.path import join
 import re
+import random
 
 # ------------------------------------------------------------------------------
 # Global constants and flags
@@ -17,25 +18,30 @@ import re
 
 DEBUG = True
 TEAM_SIZE = 2
-USE_GITHUB = True
-BUILD_GRAPH = False
+USE_GITHUB = False
+BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
-PLOT_GRAPH = False
+PLOT_GRAPH = True
 FULL_GRAPH = True
 USE_TOPICS = False
 FILTER_REGIONS = []
 SAVE_CSV = False
 SKIP_SELECTION = False
 RESULT_CSV = 'result.csv'
+RESULT_TEAMS_CSV = 'result-teams.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
+COLOR_SCHEME = 'events'
+#COLOR_SCHEME = 'sex'
 PICTURE_SIZE = 4000
 TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
 FILTER_PARTICIPANT = None
 DATADIR = 'data'
 REGIONS_FILE = join(DATADIR, 'regions.csv')
+SEX_FILE = join(DATADIR, 'sex.csv')
 TOPICS_FILE = join(DATADIR, 'topics.csv')
+AUTOTEAMS_FILE = join(DATADIR, 'talent-autoteams.csv')
 EVENT_TOPICS_FILE = join(DATADIR, 'events-topics.csv')
 GITHUBS_FILE = join(DATADIR, 'github-users.csv')
 RUKAMI_REST_TOPIC = 'Прочее'
@@ -294,7 +300,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-2122-hash.csv'),
         'level': 2,
         'dates': datetime.date(2021, 10, 1),
-        'color': 'grey3',
+        'color': 'grey2',
         'selections': None,
         'limit': 6
     },
@@ -305,7 +311,7 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-2122-f-hash.csv'),
         'level': 2,
         'dates': datetime.date(2022, 3, 1),
-        'color': 'grey4',
+        'color': 'grey3',
         'selections': 'ОНТИ-СТУД-2021/22',
         'limit': 6
     }
@@ -338,8 +344,8 @@ def read_participants(fname, prefix):
             debug('file {} bad line {}'.format(fname, str(row)))
             continue
         if len(row[2].strip()) > 0:
-            if len(row) == 4:
-                teamid = row[3]
+            if len(row) == 4 and len(row[3]) > 0:
+                teamid = int(row[3])
             else:
                 teamid = None
             participants.append((row[0], prefix, row[1], row[2], teamid))
@@ -373,6 +379,14 @@ def read_githubs(fname):
         if len(row) == 1 and len(row[0]) > 0:
             users.add(hash(row[0]))
     return users
+
+def read_autoteams(fname):
+    autoteams = set([])
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
+    for row in reader:
+        if len(row) == 1 and len(row[0]) > 0:
+            autoteams.add(int(row[0]))
+    return autoteams
 
 def read_topics(fname):
     topics = {}
@@ -418,6 +432,46 @@ def read_event_topics(fname, topics, events):
             all_topics[rukami][e] = topics[e]
     return all_topics
 
+def convert_sex(n, m, s):
+    if len(s.strip()) != 0:
+        if s != 'm' and s != 'w':
+            debug('unsupported sex {}'.format(s))
+            return None
+        return s
+    if len(m) > 0:
+        if s.rfind('вич') == len(s) - len('вич'):
+            return 'm'
+        if s.rfind('вна') == len(s) - len('вна'):
+            return 'w'
+    return None
+
+name_sex_cache = {}
+def read_sex(fname):
+    sex = {}
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
+    notfound = {}
+    for row in reader:
+        if len(row) == 4:
+            h, n, m, s = row
+            s = convert_sex(n, m, s)
+            if s:
+                if len(n) > 0:
+                    if n not in name_sex_cache:
+                        name_sex_cache[n] = {}
+                        name_sex_cache[n]['m'] = 0
+                        name_sex_cache[n]['w'] = 0
+                    name_sex_cache[n][s] += 1
+                sex[hash(h)] = s
+            else:
+                notfound[hash(h)] = n
+    for h, n in notfound.items():
+        if len(n) > 0 and n in name_sex_cache:
+            s1 = name_sex_cache[n]['m']
+            s2 = name_sex_cache[n]['w']
+            if s1 != s2:
+                sex[h] = 'm' if s1 > s2 else 'w'
+    return sex
+
 def save_csv(fname, data):
     debug('saving csv {}...'.format(fname))
     with open(fname, 'w', newline='', encoding="utf-8") as csvfile:
@@ -436,7 +490,7 @@ def init_teams():
         if isinstance(origin['dates'], str):
             origin['dates'] = read_dates(origin['dates'])
 
-def read_teams(regions, githubs):
+def read_teams(regions, githubs, sex):
     participants = []
     for origin,data in TeamOrigins.items():
         if not data['active']:
@@ -455,6 +509,8 @@ def read_teams(regions, githubs):
     has_regions = 0
     has_github = 0
     reg_filter = 0
+    have_sex = 0
+    female = 0
 
     for p in participants:
         email, origin, event, team, team_talent_id = p
@@ -473,15 +529,28 @@ def read_teams(regions, githubs):
         all_events[origin].add(event)
         
         emailhash = hash(email)
+        if emailhash in sex: 
+            emailsex = sex[emailhash]
+        else:
+            emailsex = '?'
+        fem = int(emailsex == 'w')
+        known_sex = int(emailsex != '?')
         teamhash = hash(origin + event + team)
-        if teamhash not in teaminfo: 
-            teaminfo[teamhash] = [origin, event, team] + [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...'] + [team_talent_id]
+        if teamhash not in teaminfo:
+            teaminfo[teamhash] = ([origin, event, team] +
+                                  [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...'] +
+                                  [team_talent_id, 0, 0])
         if teamhash not in teams:
             teams[teamhash] = set([])
-        teams[teamhash].add(emailhash)
+        if emailhash not in teams[teamhash]:
+            teams[teamhash].add(emailhash)
+            teaminfo[teamhash][5] += fem
+            teaminfo[teamhash][6] += known_sex
 
         if emailhash not in emails:
             emails[emailhash] = email
+            female += fem
+            have_sex += known_sex
             if email in regions:
                 has_regions += 1
                 if FILTER_REGIONS and regions[email] in FILTER_REGIONS:
@@ -501,6 +570,8 @@ def read_teams(regions, githubs):
 #        for e in events:
 #            debug('\t\t{}: [{}]'.format(e, '|'.join(event_topics[o][e])))
     debug('students:', len(emails))
+    debug('students with sex:', have_sex)
+    debug('female students:', female)
     debug('students with regions:', has_regions)
     if USE_GITHUB:
         debug('students with github:', has_github)
@@ -516,7 +587,7 @@ def read_teams(regions, githubs):
     debug('teams in talent db:', teams_in_talentdb)
 
     # drop bad teams
-    
+
     to_delete = []
     goptar_teams = set([])
     for t,e in teams.items():
@@ -630,7 +701,25 @@ def early_team(t1, t2, teaminfo):
     else:
         return t2
 
-def build_graph(teams, teaminfo, emails, regions, event_topics):
+sex_color_cache = {}
+def get_sex_color(teaminfo):
+    fem = teaminfo[5]
+    sex = teaminfo[6]
+    if sex == 0:
+        return 'grey'
+    key = fem + sex * 100
+    if key in sex_color_cache:
+        return sex_color_cache[key]
+    fem_prop = float(fem) / sex
+    #fem_prop = random.random()
+    if fem_prop <= 0.5:
+        color = "#{:02x}{:02x}{:02x}".format(int(255.0 * 2.0 * fem_prop), 0, 255)
+    else:
+        color = "#{:02x}{:02x}{:02x}".format(255, 0, int(255.0 * 2.0 * (1.0 - fem_prop)))
+    sex_color_cache[key] = color
+    return color
+    
+def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
     team_graph_edges = {}
     matched_emails = {}
     g = None
@@ -654,7 +743,12 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             t1originyear = t1origininfo['season']
         if BUILD_GRAPH:
             t1level = t1origininfo['level']
-            t1color = t1origininfo['color']
+            if COLOR_SCHEME == 'events':
+                t1color = t1origininfo['color']
+            elif COLOR_SCHEME == 'sex':
+                t1color = get_sex_color(ti1)
+            else:
+                assert False, "bad color scheme {}".format(COLOR_SCHEME)
             t1date = t1origininfo['dates'] if isinstance(t1origininfo['dates'], datetime.date) else t1origininfo['dates'][t1event] 
 
         for t2,t2emails in teams.items():
@@ -669,7 +763,12 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
             if BUILD_GRAPH:
                 t2name = ti2[3]
                 t2level = t2origininfo['level']
-                t2color = t2origininfo['color']
+                if COLOR_SCHEME == 'events':
+                    t2color = t2origininfo['color']
+                elif COLOR_SCHEME == 'sex':
+                    t2color = get_sex_color(ti2)
+                else:
+                    assert False, "bad color scheme {}".format(COLOR_SCHEME)
                 t2date = t2origininfo['dates'] if isinstance(t2origininfo['dates'], datetime.date) else t2origininfo['dates'][t2event]
 
             if t1origin == t2origin and t1event == t2event:
@@ -770,8 +869,19 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     topics_union_start = {}
 
     mixed_paths = 0
+    finals_2021_num = 0
+    
     double_onti = []
-
+    onti_plus_pb = []
+    pb_plus_onti = []
+    events_34 = []
+    events_5plus = []
+    formal_final = []
+    matches2 = []
+    matches3 = []
+    matches4 = []
+    matches5plus = []
+    
     for eh, keyhashes in matched_emails.items():
         m_emails = tuple(keyhashes[0])
         num = len(m_emails)
@@ -805,46 +915,85 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
     
         num2 = len(teams_to_print)
 
+        # multiple events
+        # ONTI finals
+        # formal teams in finals
         origins = set([])
         onti_seasons = set([])
-        onti_seasons_num = 0
+        onti_autoteams = set([])
+        onti_finals = set([])
+        onti_full_seasons = set([])
+        final_re = re.compile('ОНТИ.*\(Ф\)')
+        final_2021 = False
         for t in teams_to_print:
             ti = teaminfo[t]
             origin = ti[0]
             if origin.find('ОНТИ') == 0:
                 origins.add('ОНТИ')
                 season = TeamOrigins[origin]['season']
+                if final_re.match(origin):
+                    onti_finals.add(season)
+                    if season == 2021:
+                        final_2021 = True
                 if season in onti_seasons:
-                    onti_seasons_num += 1
+                    onti_full_seasons.add(season)
                 else:
                     onti_seasons.add(season)
+                    if ti[4] and ti[4] in autoteams:
+                        onti_autoteams.add(season)
             else:
                 origins.add(origin)
+        if final_2021:
+            finals_2021_num += 1
         if 'ОНТИ' in origins and len(origins) >= 2:
             mixed_paths += 1
+        if len(onti_finals) >= 2:
+            double_onti.append((m_emails, teams_to_print))
+        if len(onti_autoteams & onti_finals) > 0:
+            formal_final.append((m_emails, teams_to_print))
+        target_num = num2 - len(onti_full_seasons)
+        if target_num >= 2:
+            if num == 2:
+                matches2.append((m_emails, teams_to_print))
+            elif num == 3:
+                matches3.append((m_emails, teams_to_print))
+            elif num == 4:
+                matches4.append((m_emails, teams_to_print))
+            elif num >= 5:
+                matches5plus.append((m_emails, teams_to_print))
 
-        was_final = False
-        final_re = re.compile('ОНТИ.*\(Ф\)')
+            if 3 <= target_num <= 4:
+                events_34.append((m_emails, teams_to_print))
+            elif target_num >= 5:
+                events_5plus.append((m_emails, teams_to_print))
+
+        # NTI+PB
+        start_ti = teaminfo[start_team]
+        start_origin = start_ti[0]
+        onti_first = start_origin.find('ОНТИ') == 0
+        was_onti = onti_first
+        was_pb = False
         for t in teams_to_print:
             ti = teaminfo[t]
             origin = ti[0]
-            if final_re.match(origin):
-                if was_final:
-                    double_onti.append(teams_to_print)
-                    break
-                else:
-                    was_final = True
-
+            if not was_onti and origin.find('ОНТИ') == 0:
+                was_onti = True
+            if not was_pb and origin == 'ПБ':
+                was_pb = True
+        if was_onti and was_pb:
+            if onti_first:
+                onti_plus_pb.append((m_emails, teams_to_print))
+            else:
+                pb_plus_onti.append((m_emails, teams_to_print))
+                        
         if num2 in paths:
             paths[num2] += 1
         else:
             paths[num2] = 1
-
-        num3 = num2 - onti_seasons_num
-        if num3 in paths_onti:
-            paths_onti[num3] += 1
+        if target_num in paths_onti:
+            paths_onti[target_num] += 1
         else:
-            paths_onti[num3] = 1
+            paths_onti[target_num] = 1
             
         start_origin, start_event = teaminfo[start_team][0:2]
 
@@ -887,31 +1036,31 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                     topics_union_start[top][o1] = 0
                     topics_union_start[top][o1] += 1
 
-        if not SAVE_CSV:
+        if SAVE_CSV:
+            # output matches
+            data = []
+            email_list = '|'.join(map(lambda eml: emails[eml], m_emails))
+            team_id = hex(abs(hash(email_list)))[2:]
+            assert team_id not in teamids
+            teamids.add(team_id)
+            data.append(team_id)
+            data.append(len(m_emails))
+            data.append(email_list)
+            origins = []
+            events = []
+            teamnames = []
+            for teamkey in tuple(teams_to_print):
+                origin, event, teamname = teaminfo[teamkey][0:3]
+                origins.append(origin)
+                events.append(event)
+                teamnames.append(teamname)
+                data.append(len(origins))
+                data.append('|'.join(origins))
+                data.append('|'.join(events))
+                data.append('|'.join(teamnames))
+                csv_data.append(data)
+        else:
             csv_data.append(1)
-            continue
-        # output matches
-        data = []
-        email_list = '|'.join(map(lambda eml: emails[eml], m_emails))
-        team_id = hex(abs(hash(email_list)))[2:]
-        assert team_id not in teamids
-        teamids.add(team_id)
-        data.append(team_id)
-        data.append(len(m_emails))
-        data.append(email_list)
-        origins = []
-        events = []
-        teamnames = []
-        for teamkey in tuple(teams_to_print):
-            origin, event, teamname = teaminfo[teamkey][0:3]
-            origins.append(origin)
-            events.append(event)
-            teamnames.append(teamname)
-        data.append(len(origins))
-        data.append('|'.join(origins))
-        data.append('|'.join(events))
-        data.append('|'.join(teamnames))
-        csv_data.append(data)
 
     debug()
     debug('matches teams:', len(csv_data))
@@ -926,8 +1075,56 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
         debug('{}: {} ({})'.format(num, paths[num], paths_onti[num] if num in paths_onti else 0))
     debug('3+: {}'.format(plus3))
     debug()
-    debug('team sequences ONTI+x: {}'.format(mixed_paths))
+    debug('ONTI+x: {}'.format(mixed_paths))
+    debug('ONTI-f-2021: {}'.format(finals_2021_num))
+
     debug('double ONTI finals: {}'.format(len(double_onti)))
+    debug('ONTI+PB: {}'.format(len(onti_plus_pb)))
+    debug('PB+ONTI: {}'.format(len(pb_plus_onti)))
+    debug('3-4 events: {}'.format(len(events_34)))
+    debug('5+ events: {}'.format(len(events_5plus)))
+    debug('ONTI final with formal teams: {}'.format(len(formal_final)))
+    debug('matches 2+ events of 2 teams: {}'.format(len(matches2)))
+    debug('matches 2+ events of 3 teams: {}'.format(len(matches3)))
+    debug('matches 2+ events of 4 teams: {}'.format(len(matches4)))
+    debug('matches 2+ events of 5+ teams: {}'.format(len(matches5plus)))
+
+    sets_to_export = {
+        1: double_onti,
+        2: onti_plus_pb,
+        3: pb_plus_onti,
+        4: events_34,
+        5: events_5plus,
+        6: formal_final,
+        7: matches2,
+        8: matches3,
+        9: matches4,
+        10: matches5plus,        
+    }
+    nontalent_teams_to_export = []
+    nontalent_num = 1
+    data_to_export = []
+    for s, tms in sets_to_export.items():
+        match_num = 0
+        for match_emails, teamgroups in tms:
+            data = []
+            data.append(s)
+            data.append(match_num)
+            data.append(len(match_emails))
+            match_num += 1
+            for t in teamgroups:
+                ti = teaminfo[t]
+                if ti[4]:
+                    data.append(ti[4])
+                else:
+                    data.append('N{}'.format(nontalent_num))
+                    emls = []
+                    for e in teams[t]:
+                        emls.append(emails[e])
+                    new_team = [nontalent_num] + ti[0:3] + [len(emls)] + emls
+                    nontalent_teams_to_export.append(new_team)
+                    nontalent_num += 1
+            data_to_export.append(data)
 
     if USE_TOPICS:
         debug('matches team topics:')
@@ -944,7 +1141,12 @@ def build_graph(teams, teaminfo, emails, regions, event_topics):
                                                   ','.join(parts2),
                                                   teams_by_topics_int[top] if top in teams_by_topics_int else '',
                                                   ','.join(parts1)))
-    return g, csv_data
+    data = {}            
+    if SAVE_CSV:
+        data['csv'] = csv_data
+    data['results'] = data_to_export
+    data['teams'] = nontalent_teams_to_export
+    return g, data
 
 def plot_graph(g, filenames):
     visual_style = {}
@@ -967,18 +1169,22 @@ if __name__ == '__main__':
     debug()
     debug('1. reading teams data...')
     r = read_regions(REGIONS_FILE)
+    s = read_sex(SEX_FILE)
     if USE_GITHUB:
         g = read_githubs(GITHUBS_FILE)
     else:
         g = set([])
-    t, ti, e, et = read_teams(r, g)
+    a = read_autoteams(AUTOTEAMS_FILE)
+    t, ti, e, et = read_teams(r, g, s)
     debug()
     debug('2. building team graph...')
-    graph, data = build_graph(t, ti, e, r, et)
+    graph, data = build_graph(t, ti, e, r, et, a)
     debug()
     debug('3. saving results...')
     if SAVE_CSV:
-        save_csv(RESULT_CSV, data)
+        save_csv(RESULT_CSV, data['csv'])
+    save_csv(RESULT_CSV, data['results'])
+    save_csv(RESULT_TEAMS_CSV, data['teams'])
     if BUILD_GRAPH:
         if PLOT_GRAPH:
             plot_graph(graph, [RESULT_PNG, RESULT_SVG])
