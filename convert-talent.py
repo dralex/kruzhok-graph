@@ -105,10 +105,12 @@ for row in reader:
         season_year = int(eventname[eventname.find('20')+2:eventname.find('20')+4])
         season = '{}{}'.format(season_year, season_year + 1)
         if eventname.find(u'Финал') == 0:
-            if eventname.find(u'Студтрек') < 0:
-                export_name = EXPORT_NAMES[eventorigin] + '-teams-' + season + '-f'
-            else:
+            if eventname.find(u'Студтрек') >= 0:
                 export_name = EXPORT_NAMES[eventorigin] + '-teams-stud-' + season + '-f'
+            elif eventname.find('Junior') >= 0:
+                export_name = EXPORT_NAMES[eventorigin] + '-teams-jun-' + season + '-f'
+            else:
+                export_name = EXPORT_NAMES[eventorigin] + '-teams-' + season + '-f'                
         elif eventname.find(u'Этап 2') == 0:
             export_name = EXPORT_NAMES[eventorigin] + '-teams-' + season
         elif eventname.find(u'Сбор обратной связи по проведению Урока НТО.') == 0:

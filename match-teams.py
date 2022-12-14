@@ -23,7 +23,9 @@ BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
 PLOT_GRAPH = True
 FULL_GRAPH = True
-PLOT_LABELS = True
+PLOT_LABELS = False
+LABELS_COLOR = '#00000088'
+EDGES_COLOR = '#00000088'
 USE_TOPICS = False
 FILTER_REGIONS = []
 SAVE_CSV = False
@@ -39,6 +41,7 @@ TEAM_NAME_LIMIT = 15
 FILTER_ORIGIN = None
 FILTER_PARTICIPANT = None
 DATADIR = 'data'
+COLORS_FILE = join(DATADIR, 'event-colors.csv')
 REGIONS_FILE = join(DATADIR, 'regions.csv')
 SEX_FILE = join(DATADIR, 'sex.csv')
 TOPICS_FILE = join(DATADIR, 'topics.csv')
@@ -59,7 +62,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-pb-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-pb-dates.csv'),
-        'color': 'red',
         'selections': None,
         'limit': 10
     },
@@ -70,7 +72,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-kruzhokpro-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-kruzhokpro-dates.csv'),
-        'color': 'red4',
         'selections': None,
         'limit': None
     },
@@ -81,7 +82,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-opensource-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-opensource-dates.csv'),
-        'color': 'red4',
         'selections': None,
         'limit': None
     },
@@ -92,7 +92,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-vostok-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-vostok-dates.csv'),
-        'color': 'red4',
         'selections': None,
         'limit': None
     },
@@ -103,7 +102,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-2035-proj-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-2035-proj-dates.csv'),
-        'color': 'red3',
         'selections': None,
         'limit': None
     },
@@ -114,7 +112,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-sea-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-sea-dates.csv'),
-        'color': 'purple',
         'selections': None,
         'limit': None
     },
@@ -125,7 +122,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-futsci-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-futsci-dates.csv'),
-        'color': 'purple',
         'selections': None,
         'limit': None
     },
@@ -136,7 +132,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'rukami-teams-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 9, 11),
-        'color': 'purple',
         'selections': None,
         'limit': None
     },
@@ -147,7 +142,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'rukami-final-teams-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 11, 28),
-        'color': 'purple',
         'selections': None,
         'limit': None
     },
@@ -156,9 +150,8 @@ TeamOrigins = {
         'type': 'onti',
         'season': 2018,
         'teams': join(DATADIR, 'onti-teams-1819-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2018, 11, 15),
-        'color': 'blue',
         'selections': None,
         'limit': 6
     },
@@ -169,7 +162,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1819-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
-        'color': 'blue3',
         'selections': 'ОНТИ-2018/19(2)',
         'limit': 6
     },
@@ -180,7 +172,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-1819-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2019, 3, 1),
-        'color': 'blue4',
         'selections': None,
         'limit': 6
     },
@@ -189,9 +180,8 @@ TeamOrigins = {
         'type': 'onti',
         'season': 2019,
         'teams': join(DATADIR, 'onti-teams-1920-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2019, 11, 15),
-        'color': 'green',
         'selections': None,
         'limit': 6
     },
@@ -202,7 +192,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'onti-teams-1920-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
-        'color': 'green3',
         'selections': 'ОНТИ-2019/20(2)',
         'limit': 6
     },
@@ -213,7 +202,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-1920-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
-        'color': 'green4',
         'selections': None,
         'limit': 6
     },
@@ -224,18 +212,16 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-1920-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 3, 1),
-        'color': 'green4',
         'selections': 'ОНТИ-СТУД-2019/20(2)',
         'limit': 6
     },
-    'ОНТИ-2020/21': {
+    'ОНТИ-2020/21(2)': {
         'active': True,
         'type': 'onti',
         'season': 2020,
         'teams': join(DATADIR, 'talent-onti-teams-2021-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2020, 11, 15),
-        'color': 'yellow',
         'selections': None,
         'limit': 6
     },
@@ -246,7 +232,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-2021-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2021, 3, 1),
-        'color': 'gold',
         'selections': 'ОНТИ-2020/21',
         'limit': 6
     },
@@ -257,7 +242,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-2021-hash.csv'),
         'level': 1,
         'dates': datetime.date(2020, 11, 1),
-        'color': 'yellow',
         'selections': None,
         'limit': 6
     },    
@@ -268,7 +252,6 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-stud-2021-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2021, 3, 1),
-        'color': 'orange',
         'selections': 'ОНТИ-СТУД-2020/21',
         'limit': 6
     },
@@ -277,9 +260,8 @@ TeamOrigins = {
         'type': 'onti',
         'season': 2021,
         'teams': join(DATADIR, 'talent-onti-teams-2122-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2021, 11, 15),
-        'color': 'white',
         'selections': None,
         'limit': 6
     },
@@ -288,9 +270,8 @@ TeamOrigins = {
         'type': 'onti',
         'season': 2021,
         'teams': join(DATADIR, 'talent-onti-teams-2122-f-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2021, 11, 15),
-        'color': 'grey',
         'selections': 'ОНТИ-2021/22(2)',
         'limit': 6
     },
@@ -299,9 +280,8 @@ TeamOrigins = {
         'type': 'onti',
         'season': 2021,
         'teams': join(DATADIR, 'talent-onti-teams-stud-2122-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2021, 10, 1),
-        'color': 'grey2',
         'selections': None,
         'limit': 6
     },
@@ -310,12 +290,31 @@ TeamOrigins = {
         'type': 'onti',
         'season': 2021,
         'teams': join(DATADIR, 'talent-onti-teams-stud-2122-f-hash.csv'),
-        'level': 2,
+        'level': 1,
         'dates': datetime.date(2022, 3, 1),
-        'color': 'grey3',
         'selections': 'ОНТИ-СТУД-2021/22',
         'limit': 6
-    }
+    },
+    'ОНТИ-2022/23(2)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2022,
+        'teams': join(DATADIR, 'talent-onti-teams-2223-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2022, 11, 15),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-ДЖУН-2022/23(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2022,
+        'teams': join(DATADIR, 'talent-onti-teams-jun-2223-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2022, 12, 1),
+        'selections': None,
+        'limit': 6
+    },
 }
 
 def CONVERT_ORIGIN_NAME(origin):
@@ -363,6 +362,15 @@ def read_dates(fname):
             day = int(datestr[0])
             d[row[0]] = datetime.date(year, month, day)
     return d
+
+def read_colors(fname):
+    colors = {}
+    reader = csv.reader(open(fname, encoding="utf-8"), delimiter=':')
+    for row in reader:
+        if len(row) == 2:
+            origin, color = row
+            colors[origin] = color
+    return colors
 
 def read_regions(fname):
     users = {}
@@ -491,11 +499,12 @@ def init_teams():
         if isinstance(origin['dates'], str):
             origin['dates'] = read_dates(origin['dates'])
 
-def read_teams(regions, githubs, sex):
+def read_teams(regions, githubs, sex, colors):
     participants = []
     for origin,data in TeamOrigins.items():
         if not data['active']:
             continue
+        data['color'] = colors[origin]
         participants += read_participants(data['teams'],
                                           origin)
     debug('participants:', len(participants))
@@ -813,6 +822,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                     t1origin = teaminfo[t1][0]
                     if PLOT_LABELS:
                         v['label'] = t1name
+                        v['label_color'] = LABELS_COLOR
                     v['color'] = t1color
                     v['size'] = len(t1emails)
                     v['team'] = t1
@@ -824,6 +834,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                     t2origin = teaminfo[t2][0]
                     if PLOT_LABELS:
                         v['label'] = t2name
+                        v['label_color'] = LABELS_COLOR
                     v['color'] = t2color
                     v['size'] = len(t2emails)
                     v['team'] = t2
@@ -834,6 +845,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                 else:
                     e = g.add_edge(t2idx, t1idx)
                 e['weight'] = len(common_emails)
+                e['color'] = EDGES_COLOR
 
     if BUILD_GRAPH:
         debug()
@@ -1173,12 +1185,13 @@ if __name__ == '__main__':
     debug('1. reading teams data...')
     r = read_regions(REGIONS_FILE)
     s = read_sex(SEX_FILE)
+    c = read_colors(COLORS_FILE)
     if USE_GITHUB:
         g = read_githubs(GITHUBS_FILE)
     else:
         g = set([])
     a = read_autoteams(AUTOTEAMS_FILE)
-    t, ti, e, et = read_teams(r, g, s)
+    t, ti, e, et = read_teams(r, g, s, c)
     debug()
     debug('2. building team graph...')
     graph, data = build_graph(t, ti, e, r, et, a)
