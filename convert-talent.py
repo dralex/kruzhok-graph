@@ -55,7 +55,7 @@ for row in reader:
 
 reader = csv.reader(open('{}/{}'.format(DATA_DIR, NEW_TEAMS)), delimiter=IMPORT_DELIMITER)
 for row in reader:
-    if len(row) != 9:
+    if len(row) != 10:
         continue
     if row[0] == 'ID':
         continue
