@@ -59,7 +59,8 @@ TI_TEAM_LABEL = 3
 TI_TALENT_TEAM = 4
 TI_FEMALE = 5
 TI_SEX = 6
-TI_REGION = 7
+TI_REGIONS = 7
+TI_WITH_REG = 8
 
 # ------------------------------------------------------------------------------
 # Data structure
@@ -560,7 +561,7 @@ def read_teams(regions, githubs, sex, colors):
         if teamhash not in teaminfo:
             teaminfo[teamhash] = ([origin, event, team] +
                                   [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...'] +
-                                  [team_talent_id, 0, 0, set([])])
+                                  [team_talent_id, 0, 0, set([]), 0])
         if teamhash not in teams:
             teams[teamhash] = set([])
         if emailhash not in teams[teamhash]:
@@ -577,7 +578,8 @@ def read_teams(regions, githubs, sex, colors):
                 reg = regions[email]
                 if FILTER_REGIONS and reg in FILTER_REGIONS:
                     reg_filter += 1
-                teaminfo[teamhash][TI_REGION].add(reg)
+                teaminfo[teamhash][TI_REGIONS].add(reg)
+                teaminfo[teamhash][TI_WITH_REG] += 1
             if USE_GITHUB:
                 if emailhash in githubs:
                     has_github += 1
@@ -662,16 +664,31 @@ def read_teams(regions, githubs, sex, colors):
 
     regions_same = 0
     regions_diff = 0
+    regions_part = 0
     regions_none = 0
     for t in teams.keys():
-        reg = teaminfo[t][TI_REGION]
-        if len(reg) == 0:
+        ti = teaminfo[t]
+        regs = len(ti[TI_REGIONS])
+        all_regs = ti[TI_WITH_REG]
+        team_size = len(teams[t])
+        if regs == 0:
             regions_none += 1
-        elif len(reg) == 1:
-            regions_same += 1
+            ti[TI_REGIONS] = 0
+        elif regs == 1:
+            if all_regs >= team_size / 2:
+                regions_same += 1
+                ti[TI_REGIONS] = 2
+            else:
+                regions_part += 1
+                ti[TI_REGIONS] = 1
         else:
-            regions_diff += 1
-    
+            if all_regs >= team_size / 2:
+                regions_diff += 1
+                ti[TI_REGIONS] = 3
+            else:
+                regions_part += 1
+                ti[TI_REGIONS] = 1
+
     if USE_TOPICS:
         teams_by_topics = {}
         for t in teams:
@@ -718,9 +735,10 @@ def read_teams(regions, githubs, sex, colors):
                 teamsizes_pb[num] = 1            
 
     debug()
-    debug('student teams with the same region:', regions_same)
-    debug('student teams with diff regions:', regions_diff)
-    debug('student teams with w/o region:', regions_none)
+    debug('teams with the same region:', regions_same)
+    debug('teams with diff regions:', regions_diff)
+    debug('teams with bad region info:', regions_part)
+    debug('teams with w/o region:', regions_none)
     debug()
     debug('team types:')
     debug('onti', teams_onti)
@@ -798,22 +816,27 @@ def get_sex_color(teaminfo):
     sex_color_cache[key] = color
     return color
 
-reg_color_cache = {}
+# reg_color_cache = {}
 def get_reg_color(teaminfo):
-    reg = teaminfo[TI_REGION]
-    num = len(reg)
+    num = teaminfo[TI_REGIONS]
     if num == 0:
         return 'grey'
+    elif num == 1:
+        return 'white'
+    elif num == 2:
+        return 'green'
+    elif num == 3:
+        return 'blue'
     else:
-        if num in reg_color_cache:
-            return reg_color_cache[num]
-        if num > 6:
-            num = 6
-        green = 255.0 * (1.0 - float(num - 1) / 5.0)
-        blue = 255.0 * float(num - 1) / 5.0
-        color = "#{:02x}{:02x}{:02x}".format(0, int(green), int(blue))
-        reg_color_cache[num] = color
-        return color
+        assert False
+        # if num in reg_color_cache:
+        #     return reg_color_cache[num]
+        # if num > 6:
+        #     num = 6
+        # green = 255.0 * (1.0 - float(num - 1) / 5.0)
+        # blue = 255.0 * float(num - 1) / 5.0
+        # color = "#{:02x}{:02x}{:02x}".format(0, int(green), int(blue))
+        # reg_color_cache[num] = color
 
 def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
     team_graph_edges = {}
@@ -940,6 +963,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
     if BUILD_GRAPH:
         debug()
         debug('graph size: v {} e {}'.format(g.vcount(), g.ecount()))            
+        debug('teams in graph', len(teamindexes))
 
         if CALCULATE_CLUSTERS:
             debug('calculating clusters...')
