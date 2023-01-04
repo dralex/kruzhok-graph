@@ -19,6 +19,7 @@ KRUZHOKPRO_ORIGIN = u'KRUZHOK.PRO'
 OPENSOURCE_ORIGIN = u'Open Source'
 AK_ORIGIN = u'Ассоциация кружков'
 VOSTOK_ORIGIN = u'Восток'
+PLANET_ORIGIN = u'Дежурный по планете'
 
 EXPORT_NAMES = {
     PB_ORIGIN: 'talent-pb',
@@ -28,7 +29,8 @@ EXPORT_NAMES = {
     FUTSCI_ORIGIN: 'talent-futsci',
     KRUZHOKPRO_ORIGIN: 'talent-kruzhokpro',
     OPENSOURCE_ORIGIN: 'talent-opensource',
-    VOSTOK_ORIGIN: 'talent-vostok'
+    VOSTOK_ORIGIN: 'talent-vostok',
+    PLANET_ORIGIN: 'talent-planet',
 }
 
 DEBUG = True

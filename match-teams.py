@@ -24,12 +24,12 @@ CALCULATE_CLUSTERS = False
 PLOT_GRAPH = True
 FULL_GRAPH = True
 SKIP_SELECTION = False
-PLOT_LABELS = False
+PLOT_LABELS = True
 LABELS_COLOR = '#00000088'
 EDGES_COLOR = '#00000088'
 USE_TOPICS = False
-SAVE_CSV = True
-COLOR_SCHEME = 'reg' # 'events' 'sex' 'reg'
+SAVE_CSV = False
+COLOR_SCHEME = 'events' # 'events' 'sex' 'reg'
 PICTURE_SIZE = 4000
 FILTER_ORIGIN = None
 FILTER_PARTICIPANT = None
@@ -104,6 +104,16 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-vostok-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-vostok-dates.csv'),
+        'selections': None,
+        'limit': None
+    },
+    'ДЕЖУРНЫЙ': {
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'talent-planet-teams-hash.csv'),
+        'level': 1,
+        'dates': join(DATADIR, 'talent-planet-dates.csv'),
         'selections': None,
         'limit': None
     },
@@ -735,10 +745,10 @@ def read_teams(regions, githubs, sex, colors):
                 teamsizes_pb[num] = 1            
 
     debug()
-    debug('teams with the same region:', regions_same)
-    debug('teams with diff regions:', regions_diff)
-    debug('teams with bad region info:', regions_part)
-    debug('teams with w/o region:', regions_none)
+    debug('teams with the same region:', regions_same, 100.0 * float(regions_same) / float(len(teams)))
+    debug('teams with diff regions:', regions_diff, 100.0 * float(regions_diff) / float(len(teams)))
+    debug('teams with bad region info:', regions_part, 100.0 * float(regions_part) / float(len(teams)))
+    debug('teams with w/o region:', regions_none, 100.0 * float(regions_none) / float(len(teams)))
     debug()
     debug('team types:')
     debug('onti', teams_onti)
@@ -926,7 +936,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                     check_array = sorted((t1event, t2event))
                     if check_array[0] in t1originselection and check_array[1] == t1originselection[check_array[0]]:
                         continue
-                    
+
             if BUILD_GRAPH and (FULL_GRAPH and common_len > 0 or
                                 not FULL_GRAPH and common_len >= TEAM_SIZE):
                 if t1 not in teamindexes:
