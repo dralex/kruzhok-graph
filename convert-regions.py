@@ -10,6 +10,7 @@ REGIONS = (
     'olddata/regions-4.csv',
     'olddata/regions-1.csv',
     'olddata/regions-5.csv',
+    'olddata/regions-6.csv',
 )
 
 REGION_CODES = 'olddata/region-codes.csv'

@@ -20,6 +20,7 @@ OPENSOURCE_ORIGIN = u'Open Source'
 AK_ORIGIN = u'Ассоциация кружков'
 VOSTOK_ORIGIN = u'Восток'
 PLANET_ORIGIN = u'Дежурный по планете'
+ORZ_ORIGIN = u'Открываем Россию заново'
 
 EXPORT_NAMES = {
     PB_ORIGIN: 'talent-pb',
@@ -31,6 +32,7 @@ EXPORT_NAMES = {
     OPENSOURCE_ORIGIN: 'talent-opensource',
     VOSTOK_ORIGIN: 'talent-vostok',
     PLANET_ORIGIN: 'talent-planet',
+    ORZ_ORIGIN: 'talent-orz'
 }
 
 DEBUG = True
@@ -101,6 +103,8 @@ for row in reader:
     if eventorigin == u'Лёрнити':
         eventorigin = PB_ORIGIN
     if eventorigin == AK_ORIGIN and eventname == u'Всероссийский конкурс open source проектов школьников и студентов, направление “Создатели”':
+        eventorigin = OPENSOURCE_ORIGIN
+    if eventorigin == u'Конкурс open source проектов':
         eventorigin = OPENSOURCE_ORIGIN
 
     if eventorigin == ONTI_ORIGIN:

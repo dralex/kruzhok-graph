@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Kruzhok Movement teams matching tool
 #
-# Alexey Fedoseev <aleksey@fedoseev.net>, 2020-2022
+# Alexey Fedoseev <aleksey@fedoseev.net>, 2020-2023
 # ------------------------------------------------------------------------------
 
 import csv
@@ -29,16 +29,20 @@ LABELS_COLOR = '#00000088'
 EDGES_COLOR = '#00000088'
 USE_TOPICS = False
 SAVE_CSV = False
-COLOR_SCHEME = 'events' # 'events' 'sex' 'reg'
-PICTURE_SIZE = 4000
+COLOR_SCHEME = 'reg' # 'events' 'sex' 'reg'
+SAVE_PNG = False
+PICTURE_SIZE = 2000 #4000
 FILTER_ORIGIN = None
 FILTER_PARTICIPANT = None
 FILTER_REGIONS = []
+ALL_REGIONS = True
 
 RESULT_CSV = 'result.csv'
 RESULT_TEAMS_CSV = 'result-teams.csv'
 RESULT_PNG = 'graph.png'
 RESULT_SVG = 'graph.svg'
+RESULT_REGS_PNG = 'reggraph-{}.png'
+RESULT_REGS_SVG = 'reggraph-{}.svg'
 TEAM_NAME_LIMIT = 15
 DATADIR = 'data'
 COLORS_FILE = join(DATADIR, 'event-colors.csv')
@@ -74,6 +78,16 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-pb-teams-hash.csv'),
         'level': 1,
         'dates': join(DATADIR, 'talent-pb-dates.csv'),
+        'selections': None,
+        'limit': 10
+    },
+    'ОРЗ':{
+        'active': True,
+        'type': 'projects',
+        'season': None,
+        'teams': join(DATADIR, 'talent-orz-teams-hash.csv'),
+        'level': 1,
+        'dates': join(DATADIR, 'talent-orz-dates.csv'),
         'selections': None,
         'limit': 10
     },
@@ -745,10 +759,11 @@ def read_teams(regions, githubs, sex, colors):
                 teamsizes_pb[num] = 1            
 
     debug()
-    debug('teams with the same region:', regions_same, 100.0 * float(regions_same) / float(len(teams)))
-    debug('teams with diff regions:', regions_diff, 100.0 * float(regions_diff) / float(len(teams)))
-    debug('teams with bad region info:', regions_part, 100.0 * float(regions_part) / float(len(teams)))
-    debug('teams with w/o region:', regions_none, 100.0 * float(regions_none) / float(len(teams)))
+    if len(teams) > 0:
+        debug('teams with the same region:', regions_same, 100.0 * float(regions_same) / float(len(teams)))
+        debug('teams with diff regions:', regions_diff, 100.0 * float(regions_diff) / float(len(teams)))
+        debug('teams with bad region info:', regions_part, 100.0 * float(regions_part) / float(len(teams)))
+        debug('teams with w/o region:', regions_none, 100.0 * float(regions_none) / float(len(teams)))
     debug()
     debug('team types:')
     debug('onti', teams_onti)
@@ -832,11 +847,9 @@ def get_reg_color(teaminfo):
     if num == 0:
         return 'grey'
     elif num == 1:
-        return 'white'
-    elif num == 2:
-        return 'green'
-    elif num == 3:
-        return 'blue'
+        return '#7a16ff'
+    elif num >= 2:
+        return '#3badff'
     else:
         assert False
         # if num in reg_color_cache:
@@ -1374,16 +1387,45 @@ if __name__ == '__main__':
     else:
         g = set([])
     a = read_autoteams(AUTOTEAMS_FILE)
-    t, ti, e, et = read_teams(r, g, s, c)
     debug()
-    debug('2. building team graph...')
-    graph, data = build_graph(t, ti, e, r, et, a)
-    debug()
-    debug('3. saving results...')
-    if SAVE_CSV:
-        save_csv(RESULT_CSV, data['csv'])
-    save_csv(RESULT_CSV, data['results'])
-    save_csv(RESULT_TEAMS_CSV, data['teams'])
-    if BUILD_GRAPH:
-        if PLOT_GRAPH:
-            plot_graph(graph, [RESULT_PNG, RESULT_SVG])
+    
+    if ALL_REGIONS:
+        debug('2. building reg team graphs...')
+        for i in range(99):
+            reg = i + 1
+            FILTER_REGIONS = [reg]
+            t, ti, e, et = read_teams(r, g, s, c)
+            num_t = len(t)
+            debug('--------------------------------------------------------------------------------')
+            debug('reg {}: teams {}'.format(reg, num_t))
+            if num_t == 0:
+                continue
+            if num_t <= 10:
+                PICTURE_SIZE = 500
+            elif num_t <= 50:
+                PICTURE_SIZE = 1000
+            else:
+                PICTURE_SIZE = 2000
+            graph, _ = build_graph(t, ti, e, r, et, a)
+            if graph.ecount() == 0:
+                continue
+            if BUILD_GRAPH and PLOT_GRAPH:
+                targets = [RESULT_REGS_SVG.format(reg)]
+                if SAVE_PNG:
+                    targets.append(RESULT_REGS_PNG.format(reg))
+                plot_graph(graph, targets)
+    else:
+        t, ti, e, et = read_teams(r, g, s, c)
+        debug('2. building team graph...')
+        graph, data = build_graph(t, ti, e, r, et, a)
+        debug()
+        debug('3. saving results...')
+        if SAVE_CSV:
+            save_csv(RESULT_CSV, data['csv'])
+            save_csv(RESULT_CSV, data['results'])
+            save_csv(RESULT_TEAMS_CSV, data['teams'])
+        if BUILD_GRAPH and PLOT_GRAPH:
+            targets = [RESULT_SVG]
+            if SAVE_PNG:
+                targets.append(RESULT_PNG)
+            plot_graph(graph, targets)
