@@ -18,24 +18,25 @@ import random
 
 DEBUG = True
 TEAM_SIZE = 2
-USE_GITHUB = False
+USE_GITHUB = True
 BUILD_GRAPH = True
 CALCULATE_CLUSTERS = False
 PLOT_GRAPH = True
 FULL_GRAPH = True
 SKIP_SELECTION = False
-PLOT_LABELS = True
+PLOT_LABELS = False
 LABELS_COLOR = '#00000088'
 EDGES_COLOR = '#00000088'
 USE_TOPICS = False
 SAVE_CSV = False
-COLOR_SCHEME = 'reg' # 'events' 'sex' 'reg'
-SAVE_PNG = False
-PICTURE_SIZE = 2000 #4000
-FILTER_ORIGIN = None
+COLOR_SCHEME = 'sex' # 'events' 'sex' 'reg'
+SAVE_SVG = True
+SAVE_PNG = True
+PICTURE_SIZE = 4000 #4000
+FILTER_ORIGIN = None #['ВОСТОК', 'Rukami(отбор)', 'Rukami(финал)']
 FILTER_PARTICIPANT = None
 FILTER_REGIONS = []
-ALL_REGIONS = True
+ALL_REGIONS = False
 
 RESULT_CSV = 'result.csv'
 RESULT_TEAMS_CSV = 'result-teams.csv'
@@ -71,6 +72,16 @@ TI_WITH_REG = 8
 # ------------------------------------------------------------------------------
 
 TeamOrigins = {
+    'НКФП':{
+        'active': True,
+        'type': 'hackathon',
+        'season': None,
+        'teams': join(DATADIR, 'talent-nkfp-teams-hash.csv'),
+        'level': 1,
+        'dates': join(DATADIR, 'talent-nkfp-dates.csv'),
+        'selections': None,
+        'limit': 10
+    },
     'ПБ':{
         'active': True,
         'type': 'hackathon',
@@ -341,6 +352,36 @@ TeamOrigins = {
         'selections': None,
         'limit': 6
     },
+    'ОНТИ-2022/23(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2022,
+        'teams': join(DATADIR, 'talent-onti-teams-2223-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2023, 3, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2022/23': {
+        'active': True,
+        'type': 'onti',
+        'season': 2022,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2223-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2022, 10, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2022/23(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2022,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2223-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2023, 3, 1),
+        'selections': 'ОНТИ-СТУД-2022/23',
+        'limit': 6
+    },
     'ОНТИ-ДЖУН-2022/23(Ф)': {
         'active': True,
         'type': 'onti',
@@ -348,6 +389,86 @@ TeamOrigins = {
         'teams': join(DATADIR, 'talent-onti-teams-jun-2223-f-hash.csv'),
         'level': 1,
         'dates': datetime.date(2022, 12, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-2023/24(2)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2023,
+        'teams': join(DATADIR, 'talent-onti-teams-2324-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2023, 11, 15),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2023/24': {
+        'active': True,
+        'type': 'onti',
+        'season': 2023,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2324-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2023, 10, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-ДЖУН-2023/24(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2023,
+        'teams': join(DATADIR, 'talent-onti-teams-jun-2324-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2023, 12, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2023/24(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2023,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2324-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2024, 3, 1),
+        'selections': 'ОНТИ-СТУД-2023/24',
+        'limit': 6
+    },
+    'ОНТИ-2023/24(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2023,
+        'teams': join(DATADIR, 'talent-onti-teams-2324-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2024, 3, 1),
+        'selections': 'ОНТИ-2023/24(2)',
+        'limit': 6
+    },
+    'ОНТИ-2024/25(2)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2024,
+        'teams': join(DATADIR, 'talent-onti-teams-2425-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2024, 11, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2024/25': {
+        'active': True,
+        'type': 'onti',
+        'season': 2024,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2425-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2024, 10, 1),
+        'selections': None,
+        'limit': 6
+    },
+    'ОНТИ-ДЖУН-2024/25(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2024,
+        'teams': join(DATADIR, 'talent-onti-teams-jun-2425-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2024, 12, 20),
         'selections': None,
         'limit': 6
     },
@@ -557,6 +678,7 @@ def read_teams(regions, githubs, sex, colors):
     reg_filter = 0
     have_sex = 0
     female = 0
+    event_teams = {}
 
     for p in participants:
         email, origin, event, team, team_talent_id = p
@@ -573,6 +695,8 @@ def read_teams(regions, githubs, sex, colors):
             assert (isinstance(origininfo['dates'], datetime.date) or
                     event in origininfo['dates']), 'no date available for event {}:{}'.format(origin, event)
         all_events[origin].add(event)
+        if (origin + event) not in event_teams:
+            event_teams[origin + event] = 0
         
         emailhash = hash(email)
         if emailhash in sex: 
@@ -586,6 +710,7 @@ def read_teams(regions, githubs, sex, colors):
             teaminfo[teamhash] = ([origin, event, team] +
                                   [team if len(team) < TEAM_NAME_LIMIT else team[0:TEAM_NAME_LIMIT] + '...'] +
                                   [team_talent_id, 0, 0, set([]), 0])
+            event_teams[origin + event] += 1
         if teamhash not in teams:
             teams[teamhash] = set([])
         if emailhash not in teams[teamhash]:
@@ -615,10 +740,18 @@ def read_teams(regions, githubs, sex, colors):
         topics_all = event_topics = None
         
     debug('events:')
+    sum_events = 0
     for o,events in all_events.items():
+        if FILTER_ORIGIN and o not in FILTER_ORIGIN:
+            continue 
         debug('\t{}: {}'.format(o, len(events)))
+        for e in events:
+            oe = o + e
+            debug('\t\t{}: {} teams'.format(e, event_teams[oe] if oe in event_teams else oe))
+        sum_events += len(events)
 #        for e in events:
 #            debug('\t\t{}: [{}]'.format(e, '|'.join(event_topics[o][e])))
+    debug('total events:', sum_events)
     debug('students:', len(emails))
     debug('students with sex:', have_sex)
     debug('female students:', female)
@@ -740,6 +873,7 @@ def read_teams(regions, githubs, sex, colors):
     teamsizes = {}
     teamsizes_onti = {}
     teamsizes_pb = {}
+    teamsizes_rest = {}
     for t,e in teams.items():
         origin, event = teaminfo[t][0:2]
         num = len(e)
@@ -756,14 +890,19 @@ def read_teams(regions, githubs, sex, colors):
             if num in teamsizes_pb:
                 teamsizes_pb[num] += 1
             else:
-                teamsizes_pb[num] = 1            
+                teamsizes_pb[num] = 1
+        else:
+            if num in teamsizes_rest:
+                teamsizes_rest[num] += 1
+            else:
+                teamsizes_rest[num] = 1
 
     debug()
     if len(teams) > 0:
-        debug('teams with the same region:', regions_same, 100.0 * float(regions_same) / float(len(teams)))
-        debug('teams with diff regions:', regions_diff, 100.0 * float(regions_diff) / float(len(teams)))
-        debug('teams with bad region info:', regions_part, 100.0 * float(regions_part) / float(len(teams)))
-        debug('teams with w/o region:', regions_none, 100.0 * float(regions_none) / float(len(teams)))
+        debug('teams with the same region:', regions_same, int(100.0 * float(regions_same) / float(len(teams))), '%')
+        debug('teams with diff regions:', regions_diff, int(100.0 * float(regions_diff) / float(len(teams))), '%')
+        debug('teams with bad region info:', regions_part, int(100.0 * float(regions_part) / float(len(teams))),'%')
+        debug('teams with w/o region:', regions_none, int(100.0 * float(regions_none) / float(len(teams))), '%')
     debug()
     debug('team types:')
     debug('onti', teams_onti)
@@ -782,6 +921,10 @@ def read_teams(regions, githubs, sex, colors):
     debug('pb team sizes:')
     for num in sorted(teamsizes_pb.keys(), reverse=True):
         debug('{}: {}'.format(num, teamsizes_pb[num]))
+    debug()
+    debug('rest team sizes:')
+    for num in sorted(teamsizes_rest.keys(), reverse=True):
+        debug('{}: {}'.format(num, teamsizes_rest[num]))
 
     if USE_GITHUB:
         debug()
@@ -920,7 +1063,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
             if t1origin == t2origin and t1event == t2event:
                 # skip team interconnections in the common event
                 continue
-            if FILTER_ORIGIN and t1origin != FILTER_ORIGIN and t2origin != FILTER_ORIGIN:
+            if FILTER_ORIGIN and t1origin not in FILTER_ORIGIN and t2origin not in FILTER_ORIGIN:
                 # if origin filter is set skip the rest
                 continue
 
@@ -1410,10 +1553,13 @@ if __name__ == '__main__':
             if graph.ecount() == 0:
                 continue
             if BUILD_GRAPH and PLOT_GRAPH:
-                targets = [RESULT_REGS_SVG.format(reg)]
+                targets = []
+                if SAVE_SVG:
+                    targets.append(RESULT_REGS_SVG.format(reg))
                 if SAVE_PNG:
                     targets.append(RESULT_REGS_PNG.format(reg))
-                plot_graph(graph, targets)
+                if len(targets) > 0:
+                    plot_graph(graph, targets)
     else:
         t, ti, e, et = read_teams(r, g, s, c)
         debug('2. building team graph...')
@@ -1425,7 +1571,10 @@ if __name__ == '__main__':
             save_csv(RESULT_CSV, data['results'])
             save_csv(RESULT_TEAMS_CSV, data['teams'])
         if BUILD_GRAPH and PLOT_GRAPH:
-            targets = [RESULT_SVG]
+            targets = []
+            if SAVE_SVG:
+                targets.append(RESULT_SVG)
             if SAVE_PNG:
                 targets.append(RESULT_PNG)
-            plot_graph(graph, targets)
+            if len(targets) > 0:
+                plot_graph(graph, targets)

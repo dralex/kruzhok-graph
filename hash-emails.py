@@ -41,7 +41,7 @@ if isfile(join(FROM_DATADIR, SEX_FILE)):
     output = open(new_filename, 'w', newline = '')
     writer = csv.writer(output, delimiter=':',
                         quotechar='"', quoting=csv.QUOTE_MINIMAL)        
-    reader = csv.reader(open(old_filename), delimiter=',')
+    reader = csv.reader(open(old_filename), delimiter=':')
     for row in reader:
         if len(row) != 4 or row[0].find('@') < 0:
             continue

@@ -21,6 +21,9 @@ AK_ORIGIN = u'Ассоциация кружков'
 VOSTOK_ORIGIN = u'Восток'
 PLANET_ORIGIN = u'Дежурный по планете'
 ORZ_ORIGIN = u'Открываем Россию заново'
+NKFP_ORIGIN = u'Национальная киберфизическая платформа'
+AI_ORIGIN = u'AI-ACADEMY'
+SCHOOL_ORIGIN = u'ИТ-класс в Московской школе'
 
 EXPORT_NAMES = {
     PB_ORIGIN: 'talent-pb',
@@ -32,7 +35,10 @@ EXPORT_NAMES = {
     OPENSOURCE_ORIGIN: 'talent-opensource',
     VOSTOK_ORIGIN: 'talent-vostok',
     PLANET_ORIGIN: 'talent-planet',
-    ORZ_ORIGIN: 'talent-orz'
+    ORZ_ORIGIN: 'talent-orz',
+    NKFP_ORIGIN: 'talent-nkfp',
+    AI_ORIGIN: 'talent-ai',
+    SCHOOL_ORIGIN: 'talent-school'
 }
 
 DEBUG = True
@@ -59,7 +65,7 @@ for row in reader:
 
 reader = csv.reader(open('{}/{}'.format(DATA_DIR, NEW_TEAMS)), delimiter=IMPORT_DELIMITER)
 for row in reader:
-    if len(row) != 10:
+    if len(row) != 11:
         continue
     if row[0] == 'ID':
         continue
@@ -111,20 +117,24 @@ for row in reader:
         season_year = int(eventname[eventname.find('20')+2:eventname.find('20')+4])
         season = '{}{}'.format(season_year, season_year + 1)
         if eventname.find(u'Финал') == 0:
-            if eventname.find(u'Студтрек') >= 0:
+            if eventname.find(u'Студтрек') >= 0 or eventname.find(u'СтудТрек') >= 0:
                 export_name = EXPORT_NAMES[eventorigin] + '-teams-stud-' + season + '-f'
             elif eventname.find('Junior') >= 0:
                 export_name = EXPORT_NAMES[eventorigin] + '-teams-jun-' + season + '-f'
             else:
-                export_name = EXPORT_NAMES[eventorigin] + '-teams-' + season + '-f'                
+                export_name = EXPORT_NAMES[eventorigin] + '-teams-' + season + '-f'
         elif eventname.find(u'Этап 2') == 0:
             export_name = EXPORT_NAMES[eventorigin] + '-teams-' + season
         elif eventname.find(u'Сбор обратной связи по проведению Урока НТО.') == 0:
             continue
         elif eventname.find(u'Анкета финалиста Олимпиады КД НТИ 2020/2021') == 0:
             continue
+        elif eventname.find(u'Анкета участника') == 0:
+            continue
         elif eventname.find(u'Отборочный этап.') == 0 or eventname.find(u'Прыжок в финал. Отборочный этап.') == 0:
             export_name = EXPORT_NAMES[eventorigin] + '-teams-stud-' + season
+        elif eventname == 'Национальная технологическая олимпиада 2023/2024':
+            continue
         else:
             assert False, 'Bad event ONTI event name "{}"'.format(eventname)
     elif eventorigin == AK_ORIGIN and eventname == u'Всероссийский конкурс open source проектов школьников и студентов, направление “Контрибьюторы”':
@@ -138,6 +148,10 @@ for row in reader:
             export_events[export_event] = {}
         if eventname == u'Региональный хакатон по технологиям искусственного интеллекта «IZH.IT»':
             eventdate = '17.08.2021'
+        elif eventname == u'Фестиваль НКФП 2023 - Финал Турнира юных киберфизиков (ТЮКФ): продвинутый':
+            eventdate = '29.11.2023'
+        if eventorigin == NKFP_ORIGIN and len(eventdate) == 0:
+            eventdate = '31.12.2023'
         assert len(eventdate) > 0, "Bad event date {} {} {}".format(eventorigin, eventname, teamid)
         export_events[export_event][eventname] = eventdate
 
