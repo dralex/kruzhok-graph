@@ -29,10 +29,11 @@ LABELS_COLOR = '#00000088'
 EDGES_COLOR = '#00000088'
 USE_TOPICS = False
 SAVE_CSV = False
-COLOR_SCHEME = 'sex' # 'events' 'sex' 'reg'
+COLOR_SCHEME = 'events' # 'events' 'sex' 'reg'
 SAVE_SVG = True
 SAVE_PNG = True
 PICTURE_SIZE = 4000 #4000
+FILTER_TYPE = None # 'onti' 
 FILTER_ORIGIN = None #['ВОСТОК', 'Rukami(отбор)', 'Rukami(финал)']
 FILTER_PARTICIPANT = None
 FILTER_REGIONS = []
@@ -744,6 +745,10 @@ def read_teams(regions, githubs, sex, colors):
     for o,events in all_events.items():
         if FILTER_ORIGIN and o not in FILTER_ORIGIN:
             continue 
+        if FILTER_TYPE:
+            typ = TeamOrigins[o]['type']
+            if typ not in FILTER_TYPE:
+                continue
         debug('\t{}: {}'.format(o, len(events)))
         for e in events:
             oe = o + e
