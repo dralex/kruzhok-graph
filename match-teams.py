@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Kruzhok Movement teams matching tool
 #
-# Alexey Fedoseev <aleksey@fedoseev.net>, 2020-2023
+# Alexey Fedoseev <aleksey@fedoseev.net>, 2020-2025
 # ------------------------------------------------------------------------------
 
 import csv
@@ -19,22 +19,22 @@ import random
 DEBUG = True
 TEAM_SIZE = 2
 USE_GITHUB = True
-BUILD_GRAPH = True
+BUILD_GRAPH = False
 CALCULATE_CLUSTERS = False
-PLOT_GRAPH = True
+PLOT_GRAPH = False
 FULL_GRAPH = True
 SKIP_SELECTION = False
 PLOT_LABELS = False
 LABELS_COLOR = '#00000088'
 EDGES_COLOR = '#00000088'
 USE_TOPICS = False
-SAVE_CSV = False
+SAVE_CSV = True
 COLOR_SCHEME = 'events' # 'events' 'sex' 'reg'
 SAVE_SVG = True
 SAVE_PNG = True
 PICTURE_SIZE = 4000 #4000
-FILTER_TYPE = ['onti'] 
-FILTER_ORIGIN = None #['ВОСТОК', 'Rukami(отбор)', 'Rukami(финал)']
+FILTER_TYPE = None #['hackathon'] #['onti'] 
+FILTER_ORIGIN = None #['ВОСТОК'] #, 'Rukami(отбор)', 'Rukami(финал)']
 FILTER_PARTICIPANT = None
 FILTER_REGIONS = []
 ALL_REGIONS = False
@@ -473,6 +473,26 @@ TeamOrigins = {
         'selections': None,
         'limit': 6
     },
+    'ОНТИ-2024/25(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2024,
+        'teams': join(DATADIR, 'talent-onti-teams-2425-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2025, 3, 1),
+        'selections': 'ОНТИ-2024/25(2)',
+        'limit': 6
+    },
+    'ОНТИ-СТУД-2024/25(Ф)': {
+        'active': True,
+        'type': 'onti',
+        'season': 2024,
+        'teams': join(DATADIR, 'talent-onti-teams-stud-2425-f-hash.csv'),
+        'level': 1,
+        'dates': datetime.date(2025, 4, 1),
+        'selections': 'ОНТИ-СТУД-2024/25',
+        'limit': 6
+    },
 }
 
 def CONVERT_ORIGIN_NAME(origin):
@@ -796,7 +816,7 @@ def read_teams(regions, githubs, sex, colors):
                         found = True
                 if not found:
                     to_delete.append(t)
-            if FILTER_TYPE:
+            if FILTER_TYPE is not None:
                 typ = origininfo['type']
                 if typ not in FILTER_TYPE:
                     to_delete.append(t)
@@ -1014,6 +1034,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
     matched_emails = {}
     g = None
     teamindexes = {}
+    edges_to_print = {}
 
     if BUILD_GRAPH:
         g = igraph.Graph(directed=True)
@@ -1027,6 +1048,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
         t1event = ti1[TI_EVENT]
         t1name = ti1[TI_TEAM_LABEL]
         t1origininfo = TeamOrigins[t1origin]
+        t1talentteam = ti1[TI_TALENT_TEAM]
         if SKIP_SELECTION:
             t1origintype = t1origininfo['type']
             t1originselection = t1origininfo['selections']
@@ -1052,6 +1074,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
             t2origin = ti2[TI_ORIGIN]
             t2event = ti2[TI_EVENT]
             t2origininfo = TeamOrigins[t2origin]
+            t2talentteam = ti2[TI_TALENT_TEAM]
             if BUILD_GRAPH:
                 t2name = ti2[3]
                 t2level = t2origininfo['level']
@@ -1124,13 +1147,24 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                     v['team'] = t2
                 else:
                     t2idx = teamindexes[t2]
+                weight = len(common_emails)
                 if t1date < t2date:
                     e = g.add_edge(t1idx, t2idx)
+                    key = str((t1idx, t2idx))
+                    if key not in edges_to_print:
+                        edges_to_print[key] = (t1talentteam, '' if t1talentteam != 0 else '|'.join(t1emails),
+                                               t2talentteam, '' if t2talentteam != 0 else '|'.join(t2emails),
+                                               weight)
                 else:
                     e = g.add_edge(t2idx, t1idx)
-                e['weight'] = len(common_emails)
+                    key = str((t2idx, t1idx))
+                    if key not in edges_to_print:
+                        edges_to_print[key] = (t2talentteam, '' if t2talentteam != 0 else '|'.join(t2emails),
+                                               t1talentteam, '' if t1talentteam != 0 else '|'.join(t1emails),
+                                               weight)
+                e['weight'] = weight
                 e['color'] = EDGES_COLOR
-
+                
     if BUILD_GRAPH:
         debug()
         debug('graph size: v {} e {}'.format(g.vcount(), g.ecount()))            
@@ -1164,8 +1198,10 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
     debug()
     debug('building output...')
     teamids = set([])
-    csv_data = []
 
+    csv_data = []
+    csv_data.append(['team from', 'team to', 'event', 'team name', 'participants', 'ids', 'females', 'sex set', 'regions'])
+    
     teams_by_topics_int = {}
     teams_by_topics_union = {}
 
@@ -1378,32 +1414,38 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
                 if o1 not in topics_union_start[top]:
                     topics_union_start[top][o1] = 0
                     topics_union_start[top][o1] += 1
-
         if SAVE_CSV:
-            # output matches
             data = []
-            email_list = '|'.join(map(lambda eml: emails[eml], m_emails))
-            team_id = hex(abs(hash(email_list)))[2:]
-            assert team_id not in teamids
-            teamids.add(team_id)
-            data.append(team_id)
-            data.append(len(m_emails))
-            data.append(email_list)
-            origins = []
-            events = []
-            teamnames = []
-            for teamkey in tuple(teams_to_print):
-                origin, event, teamname = teaminfo[teamkey][0:3]
-                origins.append(origin)
-                events.append(event)
-                teamnames.append(teamname)
-                data.append(len(origins))
-                data.append('|'.join(origins))
-                data.append('|'.join(events))
-                data.append('|'.join(teamnames))
-                csv_data.append(data)
-        else:
-            csv_data.append(1)
+            strings = []
+            for eml in m_emails:
+                strings.append(emails[eml])
+            data.append('|'.join(strings))
+            data.append(len(teams_to_print))
+            strings = []
+            for t in teams_to_print:
+                strings.append(hex(abs(t))[2:])
+            data.append('|'.join(strings))
+            csv_data.append(data)
+
+    teams_csv_data = []
+    teams_csv_data.append(['team id', 'origin', 'event', 'team name', 'participants', 'ids', 'females', 'sex set', 'regions'])
+    if SAVE_CSV:
+        for t,temails in teams.items():
+            ti = teaminfo[t]
+            data = []
+            data.append(hex(abs(t))[2:])
+            data.append(ti[TI_ORIGIN])
+            data.append(ti[TI_EVENT])
+            data.append(ti[TI_TEAM_LABEL])
+            data.append(len(temails))
+            email_strings = []
+            for e in temails:
+                email_strings.append(emails[e])
+            data.append('|'.join(email_strings))
+            data.append(ti[TI_FEMALE])
+            data.append(ti[TI_SEX])
+            data.append(ti[TI_REGIONS])
+            teams_csv_data.append(data)
 
     debug()
     debug('matches teams:', len(csv_data))
@@ -1503,6 +1545,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
     data = {}            
     if SAVE_CSV:
         data['csv'] = csv_data
+        data['teams_csv'] = teams_csv_data
     data['results'] = data_to_export
     data['teams'] = nontalent_teams_to_export
     return g, data
@@ -1573,8 +1616,9 @@ if __name__ == '__main__':
         debug('3. saving results...')
         if SAVE_CSV:
             save_csv(RESULT_CSV, data['csv'])
-            save_csv(RESULT_CSV, data['results'])
-            save_csv(RESULT_TEAMS_CSV, data['teams'])
+            save_csv(RESULT_TEAMS_CSV, data['teams_csv'])
+            #save_csv(RESULT_CSV, data['results'])
+            #save_csv(RESULT_TEAMS_CSV, data['teams'])
         if BUILD_GRAPH and PLOT_GRAPH:
             targets = []
             if SAVE_SVG:
