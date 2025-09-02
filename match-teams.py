@@ -1266,7 +1266,7 @@ def build_graph(teams, teaminfo, emails, regions, event_topics, autoteams):
         onti_autoteams = set([])
         onti_finals = set([])
         onti_full_seasons = set([])
-        final_re = re.compile('ОНТИ.*\(Ф\)')
+        final_re = re.compile(r'ОНТИ.*\(Ф\)')
         final_2021 = False
         for t in teams_to_print:
             ti = teaminfo[t]
